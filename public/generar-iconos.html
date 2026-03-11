@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head><title>Generando íconos...</title></head>
+<body>
+<canvas id="c192" width="192" height="192" style="display:none"></canvas>
+<canvas id="c512" width="512" height="512" style="display:none"></canvas>
+<p id="status">Generando íconos, esperá un segundo...</p>
+<script>
+const svgStr = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1500 1500" width="1500" height="1500"><defs><path d="M910.68 265.1C769.57 400.7 666.08 525.12 600.21 638.36C534.33 751.61 501.64 856.63 502.12 953.44C470.55 904.91 446.25 845.49 429.23 775.17C412.21 704.86 406.9 623.65 413.3 531.56C450.31 462.35 494.72 387.41 546.53 306.74C598.34 226.06 657.55 139.65 724.16 47.5L910.68 265.1Z" id="a2tG9oDbBt"></path><linearGradient id="gradientgCyZ9f5K0" gradientUnits="userSpaceOnUse" x1="638.47" y1="194.05" x2="567.02" y2="420.53"><stop style="stop-color: #01b5f1;stop-opacity: 1" offset="0%"></stop><stop style="stop-color: #01349b;stop-opacity: 1" offset="100%"></stop></linearGradient><path d="M777.45 473.82C911.94 588.15 1013.97 706 1083.54 827.39C1153.12 948.77 1190.23 1073.69 1194.89 1202.13C1252.43 1076.65 1264.91 951.73 1232.34 827.39C1199.78 703.04 1098.48 525.98 928.44 296.19L777.45 473.82Z" id="gb9FXTLz8"></path><linearGradient id="gradientd5pMhh8fZK" gradientUnits="userSpaceOnUse" x1="1111.42" y1="866.84" x2="950.65" y2="660.34"><stop style="stop-color: #01349b;stop-opacity: 1" offset="0%"></stop><stop style="stop-color: #01b5f1;stop-opacity: 1" offset="100%"></stop></linearGradient><path d="M644.57 1297.21C575 1310.53 491.99 1315.85 395.54 1313.15C304.85 1221.32 256.54 1119.15 250.62 1006.65C244.7 894.14 281.16 771.31 360.01 638.14C393.52 843.6 448.02 995.92 523.52 1095.1C599.01 1194.28 695.5 1240.32 812.98 1233.22C770.28 1262.56 714.15 1283.89 644.57 1297.21Z" id="a8jw1Ao32"></path><linearGradient id="gradienta4Kid7wLnE" gradientUnits="userSpaceOnUse" x1="410.67" y1="1117.75" x2="336.09" y2="835.76"><stop style="stop-color: #01349b;stop-opacity: 1" offset="0%"></stop><stop style="stop-color: #01b5f1;stop-opacity: 1" offset="100%"></stop></linearGradient><path d="M986.07 1131.01C1063.79 997.04 1035.7 840.15 901.8 660.34C996 750.64 1062.35 848.34 1100.83 953.44C1139.32 1058.54 1149.95 1171.04 1132.72 1290.95C1042.07 1378.55 931.25 1430.87 800.24 1447.89C669.23 1464.91 553.58 1434.8 453.27 1357.56C730.76 1340.49 908.36 1264.98 986.07 1131.01Z" id="b2ZcXOu57F"></path><linearGradient id="gradientb18u1R842w" gradientUnits="userSpaceOnUse" x1="979.07" y1="1184.37" x2="1013.73" y2="966.76"><stop style="stop-color: #01349b;stop-opacity: 1" offset="0%"></stop><stop style="stop-color: #01b5f1;stop-opacity: 1" offset="100%"></stop></linearGradient><path d="M951.5 935.1C951.5 1065.41 864.63 1171.04 757.47 1171.04C650.31 1171.04 550.11 1083.75 550.11 953.44C550.11 823.13 650.31 699.16 757.47 500.47C864.63 699.16 951.5 804.79 951.5 935.1Z" id="b1xdyFgn2i"></path><linearGradient id="gradienta26rYOaTil" gradientUnits="userSpaceOnUse" x1="751.66" y1="1139.96" x2="751.66" y2="660.34"><stop style="stop-color: #01349b;stop-opacity: 1" offset="0%"></stop><stop style="stop-color: #01b5f1;stop-opacity: 1" offset="100%"></stop></linearGradient><path d="M551.22 933.85C550.49 943.13 550.17 954.19 550.26 967.05C550.85 1045.43 596.43 1116.51 667.43 1149.73C697.84 1163.96 723.66 1172.07 744.9 1174.07C757.72 1175.28 772.49 1173.57 789.22 1168.95C874.05 1145.51 936.32 1073.17 946.88 985.8C947.8 978.13 946.17 991.64 950.35 957C951.08 950.96 949.14 944.91 945.04 940.42C897.06 887.95 847.71 848.68 796.99 822.62C743.7 795.23 678.03 780.71 599.97 779.05C571.05 837.11 554.8 888.71 551.22 933.85Z" id="a7S2Qd4k60"></path><linearGradient id="gradientjcWW6FuLo" gradientUnits="userSpaceOnUse" x1="725.87" y1="1119.44" x2="660.77" y2="901.49"><stop style="stop-color: #0195dc;stop-opacity: 1" offset="0%"></stop><stop style="stop-color: #9be0f6;stop-opacity: 1" offset="100%"></stop></linearGradient></defs><g><g><g><use xlink:href="#a2tG9oDbBt" opacity="1" fill="url(#gradientgCyZ9f5K0)"></use></g><g><use xlink:href="#gb9FXTLz8" opacity="1" fill="url(#gradientd5pMhh8fZK)"></use></g><g><use xlink:href="#a8jw1Ao32" opacity="1" fill="url(#gradienta4Kid7wLnE)"></use></g><g><use xlink:href="#b2ZcXOu57F" opacity="1" fill="url(#gradientb18u1R842w)"></use></g><g><use xlink:href="#b1xdyFgn2i" opacity="1" fill="url(#gradienta26rYOaTil)"></use></g><g><use xlink:href="#a7S2Qd4k60" opacity="1" fill="url(#gradientjcWW6FuLo)"></use></g></g></g></svg>`;
+const blob = new Blob([svgStr], {type: 'image/svg+xml'});
+const url = URL.createObjectURL(blob);
+
+function drawAndDownload(canvasId, size, filename) {
+  return new Promise(resolve => {
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext('2d');
+    // Dark background
+    ctx.fillStyle = '#07101f';
+    ctx.fillRect(0, 0, size, size);
+    const img = new Image();
+    img.onload = () => {
+      const pad = size * 0.1;
+      ctx.drawImage(img, pad, pad, size - pad*2, size - pad*2);
+      canvas.toBlob(pngBlob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(pngBlob);
+        a.download = filename;
+        a.click();
+        resolve();
+      });
+    };
+    img.src = url;
+  });
+}
+
+(async () => {
+  await drawAndDownload('c192', 192, 'icon-192.png');
+  await new Promise(r => setTimeout(r, 500));
+  await drawAndDownload('c512', 512, 'icon-512.png');
+  document.getElementById('status').textContent = '✅ Listo! Se descargaron icon-192.png e icon-512.png. Subílos a la carpeta public en GitHub.';
+})();
+</script>
+</body>
+</html>
