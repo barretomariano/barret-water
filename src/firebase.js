@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, get, set, remove, query, orderByKey, startAt } from "firebase/database";
+import { getDatabase, ref, get, set, remove } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAlxZ1FVhsfNEnYpamiQkQ9152rl65N-zQ",
@@ -13,9 +13,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
-
-// ── Storage API compatible con window.storage de Claude ──────────────────
-// Todos los datos van bajo /barretwater/ en la Realtime DB
 const ROOT = "barretwater";
 
 export const storage = {
@@ -23,7 +20,11 @@ export const storage = {
     try {
       const snap = await get(ref(db, `${ROOT}/${key}`));
       if (!snap.exists()) return null;
-      return { key, value: snap.val() };
+      const raw = snap.val();
+      // Si Firebase devuelve objeto/array nativo, lo re-serializamos
+      // para que sget pueda hacer JSON.parse normalmente
+      const value = typeof raw === "string" ? raw : JSON.stringify(raw);
+      return { key, value };
     } catch (e) {
       console.error("storage.get error", e);
       return null;
@@ -32,7 +33,11 @@ export const storage = {
 
   async set(key, value) {
     try {
-      await set(ref(db, `${ROOT}/${key}`), value);
+      // value llega como JSON string desde sset.
+      // Lo parseamos para guardar el objeto nativo en Firebase
+      let parsed;
+      try { parsed = JSON.parse(value); } catch { parsed = value; }
+      await set(ref(db, `${ROOT}/${key}`), parsed);
       return { key, value };
     } catch (e) {
       console.error("storage.set error", e);
