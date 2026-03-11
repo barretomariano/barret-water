@@ -85,8 +85,8 @@ function tocaHoy(cli) {
   return false;
 }
 
-async function sget(k) { try { const r=await window.storage.get(k); return r?JSON.parse(r.value):null; } catch { return null; } }
-async function sset(k,v) { try { await window.storage.set(k,JSON.stringify(v)); } catch {} }
+async function sget(k) { try { const r=await storage.get(k); if(!r) return null; const v=r.value; if(typeof v==="string"){ try{return JSON.parse(v);}catch{return v;} } return v; } catch { return null; } }
+async function sset(k,v) { try { await storage.set(k,v); } catch {} }
 
 const emptyDay   = (date) => ({ date:date||todayKey(), ventas:[], gastos:[], nota:"" });
 const costoTotal = arr => arr.reduce((a,c)=>a+(parseFloat(c.monto)||0),0);

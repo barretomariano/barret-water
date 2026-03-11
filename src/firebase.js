@@ -21,10 +21,8 @@ export const storage = {
       const snap = await get(ref(db, `${ROOT}/${key}`));
       if (!snap.exists()) return null;
       const raw = snap.val();
-      // Si Firebase devuelve objeto/array nativo, lo re-serializamos
-      // para que sget pueda hacer JSON.parse normalmente
-      const value = typeof raw === "string" ? raw : JSON.stringify(raw);
-      return { key, value };
+      // Siempre devolvemos el valor nativo (objeto/array/string/number)
+      return { key, value: raw };
     } catch (e) {
       console.error("storage.get error", e);
       return null;
@@ -33,11 +31,13 @@ export const storage = {
 
   async set(key, value) {
     try {
-      // value llega como JSON string desde sset.
-      // Lo parseamos para guardar el objeto nativo en Firebase
-      let parsed;
-      try { parsed = JSON.parse(value); } catch { parsed = value; }
-      await set(ref(db, `${ROOT}/${key}`), parsed);
+      // value puede ser cualquier tipo - lo guardamos directo en Firebase
+      // Si es string, intentamos parsearlo para guardar el objeto nativo
+      let toStore = value;
+      if (typeof value === "string") {
+        try { toStore = JSON.parse(value); } catch { toStore = value; }
+      }
+      await set(ref(db, `${ROOT}/${key}`), toStore);
       return { key, value };
     } catch (e) {
       console.error("storage.set error", e);
