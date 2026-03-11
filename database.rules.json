@@ -1,0 +1,8 @@
+{
+  "rules": {
+    "barretwater": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}
