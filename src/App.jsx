@@ -85,7 +85,24 @@ function tocaHoy(cli) {
   return false;
 }
 
-async function sget(k) { try { const r=await storage.get(k); if(!r) return null; const v=r.value; if(typeof v==="string"){ try{return JSON.parse(v);}catch{return v;} } return v; } catch { return null; } }
+function firebaseToJs(v) {
+  if(v===null||v===undefined) return v;
+  if(typeof v==="string"){try{return JSON.parse(v);}catch{return v;}}
+  // Firebase convierte arrays a objetos {0:x,1:y} — los revertimos
+  if(typeof v==="object"&&!Array.isArray(v)){
+    const keys=Object.keys(v);
+    if(keys.length>0&&keys.every(k=>String(parseInt(k))===k)){
+      return keys.sort((a,b)=>parseInt(a)-parseInt(b)).map(k=>firebaseToJs(v[k]));
+    }
+    // objeto normal - recursar
+    const out={};
+    for(const k of keys) out[k]=firebaseToJs(v[k]);
+    return out;
+  }
+  if(Array.isArray(v)) return v.map(firebaseToJs);
+  return v;
+}
+async function sget(k) { try { const r=await storage.get(k); if(!r) return null; return firebaseToJs(r.value); } catch { return null; } }
 async function sset(k,v) { try { await storage.set(k,v); } catch {} }
 
 const emptyDay   = (date) => ({ date:date||todayKey(), ventas:[], gastos:[], nota:"" });
