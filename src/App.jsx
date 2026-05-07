@@ -104,7 +104,7 @@ function tocaHoy(cli) {
   if (!cli.frecuenciaTipo || cli.frecuenciaTipo === "ninguna") return false;
   if (cli.estado === "pausado" || cli.estado === "perdido") return false;
   if (cli.frecuenciaTipo === "semanal") {
-    return (cli.diasSemana || []).includes(todayDow());
+    return Array.isArray(cli.diasSemana) && cli.diasSemana.includes(todayDow());
   }
   if (cli.frecuenciaTipo === "dias") {
     const ultima = cli.ultimaVisita;
@@ -142,13 +142,13 @@ const costoTotal = arr => arr.reduce((a,c)=>a+(parseFloat(c.monto)||0),0);
 function dayTotals(day, prices, cv20, cv12) {
   const p20=prices?.p20||5000, p12=prices?.p12||3000;
   let cobrado=0,fiado=0,efectivo=0,transferencia=0,u20=0,u12=0;
-  (day.ventas||[]).forEach(v=>{
+  (Array.isArray(day.ventas)?day.ventas:[]).forEach(v=>{
     const m=v.montoManual!=null?v.montoManual:((v.u20||0)*p20+(v.u12||0)*p12);
     u20+=v.u20||0; u12+=v.u12||0;
     if(v.pago==="fiado") fiado+=m;
     else { cobrado+=m; if(v.pago==="efectivo") efectivo+=m; else transferencia+=m; }
   });
-  const gastosOp   = (day.gastos||[]).filter(g=>g.tipo==="operativo").reduce((a,g)=>a+(parseFloat(g.monto)||0),0);
+  const gastosOp   = (Array.isArray(day.gastos)?day.gastos:[]).filter(g=>g.tipo==="operativo").reduce((a,g)=>a+(parseFloat(g.monto)||0),0);
   const gastosExt  = (day.gastos||[]).filter(g=>g.tipo==="extraordinario").reduce((a,g)=>a+(parseFloat(g.monto)||0),0);
   const gastosFijos= (day.gastos||[]).filter(g=>g.tipo==="fijo").reduce((a,g)=>a+(parseFloat(g.monto)||0),0);
   const gastos = gastosOp+gastosExt+gastosFijos;
@@ -181,30 +181,38 @@ function calcCierreSemanal(days,prices,cv20,cv12,fijosCats) {
 
 // ── THEME ──────────────────────────────────────────────────────────────────
 const DARK = {
-  bg:        "#07101f",
-  bgCard:    "linear-gradient(145deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018))",
-  border:    "rgba(255,255,255,0.09)",
-  borderTop: "rgba(255,255,255,0.16)",
-  text:      "#e2e8f0",
-  textMuted: "#64748b",
-  textDim:   "#334155",
-  input:     "rgba(255,255,255,0.06)",
-  inputBorder:"rgba(255,255,255,0.1)",
-  navBg:     "rgba(7,16,31,0.95)",
-  accent:    "#0EA5E9",
+  bg:        "#060d1a",
+  bgCard:    "linear-gradient(160deg,rgba(255,255,255,0.07) 0%,rgba(255,255,255,0.02) 100%)",
+  border:    "rgba(255,255,255,0.08)",
+  borderTop: "rgba(255,255,255,0.18)",
+  text:      "#f1f5f9",
+  textMuted: "#7c8fa8",
+  textDim:   "#2d3f55",
+  input:     "rgba(255,255,255,0.05)",
+  inputBorder:"rgba(255,255,255,0.12)",
+  navBg:     "rgba(6,13,26,0.97)",
+  accent:    "#38bdf8",
+  accentAlt: "#818cf8",
+  success:   "#34d399",
+  warning:   "#fbbf24",
+  danger:    "#f87171",
 };
 const LIGHT = {
-  bg:        "#f0f4f8",
-  bgCard:    "linear-gradient(145deg,rgba(255,255,255,0.92),rgba(255,255,255,0.75))",
-  border:    "rgba(0,0,0,0.08)",
-  borderTop: "rgba(255,255,255,0.9)",
+  bg:        "#f8fafc",
+  bgCard:    "linear-gradient(160deg,rgba(255,255,255,0.95) 0%,rgba(241,245,249,0.85) 100%)",
+  border:    "rgba(0,0,0,0.07)",
+  borderTop: "rgba(255,255,255,0.95)",
   text:      "#0f172a",
   textMuted: "#64748b",
-  textDim:   "#94a3b8",
+  textDim:   "#cbd5e1",
   input:     "rgba(0,0,0,0.04)",
-  inputBorder:"rgba(0,0,0,0.1)",
-  navBg:     "rgba(240,244,248,0.97)",
+  inputBorder:"rgba(0,0,0,0.09)",
+  navBg:     "rgba(248,250,252,0.97)",
   accent:    "#0284C7",
+  accentAlt: "#6366f1",
+  success:   "#10B981",
+  warning:   "#F59E0B",
+  danger:    "#ef4444",
 };
 
 // ── DESIGN PRIMITIVES ──────────────────────────────────────────────────────
@@ -212,24 +220,26 @@ const glassCard = (th) => ({
   background: th.bgCard,
   border: `1px solid ${th.border}`,
   borderTop: `1px solid ${th.borderTop}`,
-  borderRadius: 18,
-  boxShadow: "0 4px 24px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.08)",
+  borderRadius: 20,
+  boxShadow: "0 2px 16px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.1)",
   padding: "14px 16px",
   marginBottom: 12,
+  transition: "box-shadow 0.2s ease",
 });
 const inputStyle = (th) => ({
-  padding: "10px 13px",
+  padding: "11px 14px",
   background: th.input,
   border: `1px solid ${th.inputBorder}`,
-  borderRadius: 11,
+  borderRadius: 12,
   color: th.text,
   fontSize: 14,
   outline: "none",
   width: "100%",
   boxSizing: "border-box",
+  transition: "border-color 0.15s ease",
 });
 const btnPrimary = {
-  background: "linear-gradient(135deg,#0EA5E9,#0284C7)",
+  background: "linear-gradient(135deg,#38bdf8,#0284C7)",
   border: "none",
   borderRadius: 14,
   color: "white",
@@ -238,7 +248,8 @@ const btnPrimary = {
   cursor: "pointer",
   padding: "13px",
   width: "100%",
-  boxShadow: "0 6px 20px rgba(14,165,233,0.3)",
+  boxShadow: "0 6px 20px rgba(56,189,248,0.25)",
+  letterSpacing: "0.02em",
 };
 const btnGhost = (th) => ({
   background: "rgba(255,255,255,0.06)",
@@ -304,7 +315,7 @@ function FiadoRow({ f, onCobrar, onDelete, dimmed, th }) {
     <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",marginBottom:8,background:"rgba(255,255,255,0.03)",borderRadius:11,border:`1px solid rgba(255,255,255,0.07)`,opacity:dimmed?0.5:1}}>
       <div style={{flex:1}}>
         <div style={{display:"flex",alignItems:"baseline",gap:6,flexWrap:"wrap"}}>
-          <span style={{fontSize:13,fontWeight:600,color:th?.text||"#e2e8f0",textDecoration:dimmed?"line-through":"none"}}>{f.nombre}</span>
+          <span style={{fontSize:13,fontWeight:600,color:th?.text||"#e2e8f0",textDecoration:dimmed?"line-through":"none"}}>{String(f.nombre||"")}</span>
           {f.direccion&&<span style={{fontSize:10,color:th?.textMuted||"#64748b",fontStyle:"italic"}}>📍 {f.direccion}</span>}
         </div>
         {f.nota&&<div style={{fontSize:11,color:th?.textMuted||"#64748b"}}>{f.nota}</div>}
@@ -351,11 +362,14 @@ function BottomModal({ children, onClose, th }) {
 // ── CLIENTE SEARCH INPUT ───────────────────────────────────────────────────
 function ClienteSearch({ clientes, value, onChange, th }) {
   const [showSug,setShowSug] = useState(false);
-  const filtered = clientes.filter(c=>
-    c.nombre.toLowerCase().includes(value.toLowerCase()) ||
-    (c.direccion||"").toLowerCase().includes(value.toLowerCase()) ||
-    (c.tel||"").includes(value)
-  ).slice(0,6);
+  const filtered = clientes.filter(c=>{
+    try {
+      const q = value.toLowerCase();
+      return String(c.nombre||"").toLowerCase().includes(q) ||
+             String(c.direccion||"").toLowerCase().includes(q) ||
+             String(c.tel||"").includes(value);
+    } catch { return true; }
+  }).slice(0,6);
   return (
     <div style={{position:"relative"}}>
       <input type="text" placeholder="Buscar cliente..." value={value}
@@ -712,7 +726,7 @@ export default function App() {
       const an  = await sget("appName");       if(an) {setAppName(an);setTmpName(an);}
       const dm  = await sget("darkMode");      if(dm!=null) setDarkMode(dm);
       const p   = await sget("pedidos_v1");
-      if(p){ const hoy=todayKey(); const act=p.filter(x=>!x.entregado).map(x=>x.fecha<hoy?{...x,fecha:hoy}:x); setPedidos(act); await sset("pedidos_v1",act); }
+      if(p){ const arr=Array.isArray(p)?p:Object.values(p||{}); const hoy=todayKey(); const act=arr.filter(x=>x&&!x.entregado).map(x=>x.fecha<hoy?{...x,fecha:hoy}:x); setPedidos(act); await sset("pedidos_v1",act); }
     })();
   },[]);
 
@@ -770,7 +784,7 @@ export default function App() {
       });
       setClientes(nc); await sset("clientes_v1",nc);
     }
-    const np=pedidos.filter(p=>p.id!==pedido.id);
+    const np=(Array.isArray(pedidos)?pedidos:[]).filter(p=>p.id!==pedido.id);
     setPedidos(np); await sset("pedidos_v1",np);
     setEntregarModal(null); showToast("✅ Entrega confirmada — venta registrada");
   };
@@ -867,7 +881,7 @@ export default function App() {
   };
 
   const devolverBidon=async(clienteId,tipo)=>{
-    const nc=clientes.map(c=>{ if(c.id!==clienteId)return c; const bd=(c.bidonesDeben||[]).map(b=>b.tipo===tipo?{...b,cant:Math.max(0,b.cant-1)}:b).filter(b=>b.cant>0); return{...c,bidonesDeben:bd}; });
+    const nc=(Array.isArray(clientes)?clientes:[]).map(c=>{ if(c.id!==clienteId)return c; const bd=(Array.isArray(c.bidonesDeben)?c.bidonesDeben:[]).map(b=>b.tipo===tipo?{...b,cant:Math.max(0,b.cant-1)}:b).filter(b=>b.cant>0); return{...c,bidonesDeben:bd}; });
     setClientes(nc); await sset("clientes_v1",nc); showToast("✅ Bidón devuelto");
   };
 
@@ -944,18 +958,21 @@ export default function App() {
   const monthTotal   = thisMonth.reduce((a,d)=>a+dayTotals(d,prices,cv20,cv12).cobrado,0);
   const lastMonthTotal=lastMonth.reduce((a,d)=>a+dayTotals(d,prices,cv20,cv12).cobrado,0);
   const sectoresToday= sectors.map(s=>({...s,totalDay:s.monto*(todayT.u20+todayT.u12)}));
-  const clienteRanking=clientes.map(c=>({...c,totalMes:thisMonth.reduce((a,d)=>{const vs=(d.ventas||[]).filter(v=>v.clienteId===c.id&&!v.montoManual&&v.pago!=="fiado"); return a+vs.reduce((b,v)=>b+(v.u20||0)*prices.p20+(v.u12||0)*prices.p12,0);},0)})).filter(c=>c.totalMes>0).sort((a,b)=>b.totalMes-a.totalMes).slice(0,5);
-  const bidonesSinDevolver = clientes.flatMap(c=>(c.bidonesDeben||[]).filter(b=>b.cant>0).map(b=>({...b,nombre:c.nombre,clienteId:c.id})));
+  const clienteRanking=(Array.isArray(clientes)?clientes:[]).map(c=>({...c,totalMes:thisMonth.reduce((a,d)=>{const vs=(d.ventas||[]).filter(v=>v.clienteId===c.id&&!v.montoManual&&v.pago!=="fiado"); return a+vs.reduce((b,v)=>b+(v.u20||0)*prices.p20+(v.u12||0)*prices.p12,0);},0)})).filter(c=>c.totalMes>0).sort((a,b)=>b.totalMes-a.totalMes).slice(0,5);
+  const bidonesSinDevolver = (Array.isArray(clientes)?clientes:[]).flatMap(c=>(Array.isArray(c.bidonesDeben)?c.bidonesDeben:[]).filter(b=>b&&b.cant>0).map(b=>({...b,nombre:String(c.nombre||""),clienteId:c.id})));
   const totalSinDevolver   = bidonesSinDevolver.reduce((a,b)=>a+b.cant,0);
 
   // visitas programadas para hoy
-  const visitasProgramadas = clientes.filter(c=>tocaHoy(c) && c.estado!=="perdido");
+  const visitasProgramadas = (Array.isArray(clientes)?clientes:[]).filter(c=>{ try { return tocaHoy(c) && c.estado!=="perdido"; } catch { return false; } });
   // clientes filtrados
-  const clientesFiltrados  = clientes.filter(c=>
-    c.nombre.toLowerCase().includes(cliSearch.toLowerCase()) ||
-    (c.direccion||"").toLowerCase().includes(cliSearch.toLowerCase()) ||
-    (c.tel||"").includes(cliSearch)
-  );
+  const clientesFiltrados  = clientes.filter(c=>{
+    try {
+      const q = cliSearch.toLowerCase();
+      return String(c.nombre||"").toLowerCase().includes(q) ||
+             String(c.direccion||"").toLowerCase().includes(q) ||
+             String(c.tel||"").includes(cliSearch);
+    } catch { return true; }
+  });
 
   // ── render helpers ─────────────────────────────────────────────────────
   const NAV_TABS = [
@@ -999,7 +1016,7 @@ export default function App() {
       )}
 
       {/* HEADER */}
-      <div style={{background:darkMode?"linear-gradient(135deg,rgba(14,165,233,0.12),rgba(14,165,233,0.03))":"linear-gradient(135deg,rgba(14,165,233,0.08),rgba(14,165,233,0.02))",borderBottom:`1px solid ${th.border}`,padding:"11px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100,backdropFilter:"blur(12px)"}}>
+      <div style={{background:darkMode?"linear-gradient(135deg,rgba(56,189,248,0.1),rgba(6,13,26,0.95))":"linear-gradient(135deg,rgba(2,132,199,0.06),rgba(248,250,252,0.97))",borderBottom:`1px solid ${th.border}`,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100,backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)"}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <img src={LOGO_B64} alt="logo" style={{width:34,height:34,objectFit:"contain"}}/>
           <div>
@@ -1241,8 +1258,8 @@ export default function App() {
             {cForm.frecuenciaTipo==="semanal"&&(
               <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
                 {DIAS_SEMANA.map((d,i)=>(
-                  <button key={i} onClick={()=>setCForm(f=>({...f,diasSemana:f.diasSemana.includes(i)?f.diasSemana.filter(x=>x!==i):[...f.diasSemana,i]}))}
-                    style={{padding:"6px 10px",borderRadius:9,border:`2px solid ${cForm.diasSemana.includes(i)?th.accent:th.border}`,background:cForm.diasSemana.includes(i)?`${th.accent}20`:"transparent",color:cForm.diasSemana.includes(i)?th.accent:th.textMuted,cursor:"pointer",fontSize:12,fontWeight:cForm.diasSemana.includes(i)?700:400}}>
+                  <button key={i} onClick={()=>setCForm(f=>({...f,diasSemana:(Array.isArray(f.diasSemana)&&f.diasSemana.includes(i))?f.diasSemana.filter(x=>x!==i):[...(Array.isArray(f.diasSemana)?f.diasSemana:[]),i]}))}
+                    style={{padding:"6px 10px",borderRadius:9,border:`2px solid ${(Array.isArray(cForm.diasSemana)&&cForm.diasSemana.includes(i))?th.accent:th.border}`,background:(Array.isArray(cForm.diasSemana)&&cForm.diasSemana.includes(i))?`${th.accent}20`:"transparent",color:(Array.isArray(cForm.diasSemana)&&cForm.diasSemana.includes(i))?th.accent:th.textMuted,cursor:"pointer",fontSize:12,fontWeight:(Array.isArray(cForm.diasSemana)&&cForm.diasSemana.includes(i))?700:400}}>
                     {d}
                   </button>
                 ))}
@@ -1308,7 +1325,7 @@ export default function App() {
                     {c.tel&&<a href={`https://wa.me/54${String(c.tel).replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#25d366",textDecoration:"none",display:"block",marginTop:2}}>📱 {c.tel}</a>}
                     {c.direccion&&<a href={`https://maps.google.com/?q=${encodeURIComponent(c.direccion+" San José Entre Ríos Argentina")}`} target="_blank" rel="noreferrer" style={{display:"block",fontSize:12,color:th.accent,textDecoration:"none",marginTop:1}}>📍 {c.direccion}</a>}
                     {c.frecuenciaTipo&&c.frecuenciaTipo!=="ninguna"&&<div style={{fontSize:10,color:th.textMuted,marginTop:2}}>
-                      {c.frecuenciaTipo==="semanal"?`📅 ${(c.diasSemana||[]).map(d=>DIAS_SEMANA[d]).join(", ")}`:`🔄 Cada ${c.frecuenciaDias} días`}
+                      {c.frecuenciaTipo==="semanal"?`📅 ${(Array.isArray(c.diasSemana)?c.diasSemana:[]).map(d=>DIAS_SEMANA[d]||"").join(", ")}`:`🔄 Cada ${c.frecuenciaDias} días`}
                       {prox&&<span style={{marginLeft:6,color:diasProx<=1?"#10B981":diasProx<=3?"#F59E0B":th.textDim}}>→ próx. {diasProx===0?"hoy":diasProx===1?"mañana":`en ${diasProx}d`}</span>}
                     </div>}
                     {c.visitas>0&&<div style={{fontSize:10,color:th.textDim,marginTop:1}}>🏃 {c.visitas} visita{c.visitas!==1?"s":""}{c.ultimaVisita?` · última hace ${diffDays(c.ultimaVisita,todayKey())}d`:""}</div>}
@@ -1349,7 +1366,7 @@ export default function App() {
 
           {subTab==="historial"&&<>
             {history.length===0&&<Empty icon="📅" text="Sin días guardados" th={th}/>}
-            {[...history].sort((a,b)=>b.date.localeCompare(a.date)).map(d=>{
+            {(Array.isArray(history)?[...history]:[]).sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))).map(d=>{
               const t=dayTotals(d,prices,cv20,cv12);
               return(
                 <GCard key={d.date} th={th} style={{marginBottom:10}}>
