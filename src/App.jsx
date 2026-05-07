@@ -1305,7 +1305,7 @@ export default function App() {
                       <span style={{fontWeight:700,fontSize:14,color:th.text}}>{c.nombre}</span>
                       <span style={{fontSize:10,fontWeight:600,color:estado.color,background:`${estado.color}18`,padding:"2px 7px",borderRadius:20}}>{estado.label}</span>
                     </div>
-                    {c.tel&&<a href={`https://wa.me/54${c.tel.replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#25d366",textDecoration:"none",display:"block",marginTop:2}}>📱 {c.tel}</a>}
+                    {c.tel&&<a href={`https://wa.me/54${String(c.tel).replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#25d366",textDecoration:"none",display:"block",marginTop:2}}>📱 {c.tel}</a>}
                     {c.direccion&&<a href={`https://maps.google.com/?q=${encodeURIComponent(c.direccion+" San José Entre Ríos Argentina")}`} target="_blank" rel="noreferrer" style={{display:"block",fontSize:12,color:th.accent,textDecoration:"none",marginTop:1}}>📍 {c.direccion}</a>}
                     {c.frecuenciaTipo&&c.frecuenciaTipo!=="ninguna"&&<div style={{fontSize:10,color:th.textMuted,marginTop:2}}>
                       {c.frecuenciaTipo==="semanal"?`📅 ${(c.diasSemana||[]).map(d=>DIAS_SEMANA[d]).join(", ")}`:`🔄 Cada ${c.frecuenciaDias} días`}
