@@ -232,23 +232,29 @@ let _fcmMessaging = null;
 
 async function initFCM() {
   try {
-    // Cargar Firebase SDK dinámicamente (solo si no está cargado)
-    if (!window.__fbApp) {
-      const [{ initializeApp }, { getMessaging, getToken, onMessage }] = await Promise.all([
-        import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"),
-        import("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js"),
-      ]);
-      window.__fbApp       = initializeApp(FIREBASE_CONFIG);
-      window.__fbMessaging = getMessaging(window.__fbApp);
-      window.__fbGetToken  = getToken;
-      window.__fbOnMessage = onMessage;
+    if (window.__fcmReady) return true;
+    // Cargar Firebase SDK via script tags (compatible con Create React App)
+    await loadScript("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
+    await loadScript("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js");
+    if (!window.firebase.apps.length) {
+      window.firebase.initializeApp(FIREBASE_CONFIG);
     }
-    _fcmMessaging = window.__fbMessaging;
+    window.__fcmMessaging = window.firebase.messaging();
+    window.__fcmReady = true;
     return true;
   } catch (e) {
     console.warn("FCM init error:", e);
     return false;
   }
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) return resolve();
+    const s = document.createElement("script");
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
 }
 
 async function requestNotifPermission() {
@@ -267,7 +273,7 @@ async function registerFCMToken() {
     const ok = await initFCM();
     if (!ok) return;
     const sw = await navigator.serviceWorker.ready;
-    const token = await window.__fbGetToken(window.__fbMessaging, {
+    const token = await window.__fcmMessaging.getToken({
       vapidKey: FCM_VAPID_KEY,
       serviceWorkerRegistration: sw,
     });
