@@ -395,7 +395,7 @@ function ClienteSearch({ clientes, value, onChange, th }) {
       c && typeof c === "object" && (
         (c.nombre || "").toLowerCase().includes(q) ||
         (c.direccion || "").toLowerCase().includes(q) ||
-        (c.tel || "").includes(value)
+        String(c.tel || "").includes(value)
       )
     ).slice(0, 6);
   }, [clientes, value]);
