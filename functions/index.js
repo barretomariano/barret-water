@@ -126,4 +126,3 @@ exports.onCierreCaja = onValueWritten(
   }
 );
 
-
