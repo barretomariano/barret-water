@@ -27,4 +27,6 @@ jobs:
           args: deploy --only functions --project barretwater
         env:
           GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+
  
