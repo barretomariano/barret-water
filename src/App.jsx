@@ -210,20 +210,89 @@ function validateBackup(data) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NOTIFICATIONS
+// NOTIFICATIONS + FCM TOKEN REGISTRATION
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ── REEMPLAZÁ ESTA KEY con tu VAPID key de Firebase Console ──
+// Firebase Console → Project Settings → Cloud Messaging → Web Push certificates → Key pair
+const FCM_VAPID_KEY = "BLJW6EAg-XJTokVCZSUkrH0vPkhIc84NytY_ID0nOv0aecXQJ3jPirq4qiLA5WEeJ_frwns504Ah-mOV58-JInQ";
+
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyAlxZ1FVhsfNEnYpamiQkQ9152rl65N-zQ",
+  authDomain:        "barretwater.firebaseapp.com",
+  databaseURL:       "https://barretwater-default-rtdb.firebaseio.com",
+  projectId:         "barretwater",
+  storageBucket:     "barretwater.firebasestorage.app",
+  messagingSenderId: "268110919054",
+  appId:             "1:268110919054:web:67018d89c9c8da0f11e0df",
+  measurementId:     "G-4W28VTLRXF",
+};
+
+let _fcmMessaging = null;
+
+async function initFCM() {
+  try {
+    // Cargar Firebase SDK dinámicamente (solo si no está cargado)
+    if (!window.__fbApp) {
+      const [{ initializeApp }, { getMessaging, getToken, onMessage }] = await Promise.all([
+        import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"),
+        import("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js"),
+      ]);
+      window.__fbApp       = initializeApp(FIREBASE_CONFIG);
+      window.__fbMessaging = getMessaging(window.__fbApp);
+      window.__fbGetToken  = getToken;
+      window.__fbOnMessage = onMessage;
+    }
+    _fcmMessaging = window.__fbMessaging;
+    return true;
+  } catch (e) {
+    console.warn("FCM init error:", e);
+    return false;
+  }
+}
+
 async function requestNotifPermission() {
   if (!("Notification" in window)) return false;
-  if (Notification.permission === "granted") return true;
-  const perm = await Notification.requestPermission();
-  return perm === "granted";
+  if (Notification.permission !== "granted") {
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") return false;
+  }
+  // Registrar token FCM en Firebase RTDB para push con app cerrada
+  await registerFCMToken();
+  return true;
 }
+
+async function registerFCMToken() {
+  try {
+    const ok = await initFCM();
+    if (!ok) return;
+    const sw = await navigator.serviceWorker.ready;
+    const token = await window.__fbGetToken(window.__fbMessaging, {
+      vapidKey: FCM_VAPID_KEY,
+      serviceWorkerRegistration: sw,
+    });
+    if (token) {
+      // Guardar token en RTDB bajo fcm_tokens/<token_hash>
+      const key = token.slice(-20); // usar últimos 20 chars como key única
+      await fetch(`${FB}/fcm_tokens/${key}.json`, {
+        method: "PUT",
+        body: JSON.stringify(token),
+        headers: { "Content-Type": "application/json" },
+      });
+      console.log("FCM token registrado:", key);
+    }
+  } catch (e) {
+    console.warn("FCM token error:", e);
+  }
+}
+
 function sendNotif(title, body, icon = "/icon-192.png") {
+  // Las notificaciones reales con app cerrada las maneja FCM via Cloud Functions.
+  // Esta función es fallback para cuando la app está abierta.
   if (!("Notification" in window) || Notification.permission !== "granted") return;
-  // Use Service Worker for Android/iOS PWA support
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.ready.then(reg => {
-      reg.showNotification(title, { body, icon, badge: icon }).catch(() => {
+      reg.showNotification(title, { body, icon, badge: "/icon-192.png", vibrate: [200, 100, 200] }).catch(() => {
         try { new Notification(title, { body, icon }); } catch {}
       });
     }).catch(() => {
