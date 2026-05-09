@@ -211,10 +211,10 @@ function validateBackup(data) {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NOTIFICATIONS + FCM TOKEN REGISTRATION  (v2 — corregido)
+// NOTIFICATIONS — FCM (Android/Chrome) + Web Push VAPID (iOS PWA)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const FCM_VAPID_KEY = "BLJW6EAg-XJTokVCZSUkrH0vPkhIc84NytY_ID0nOv0aecXQJ3jPirq4qiLA5WEeJ_frwns504Ah-mOV58-JInQ";
+const FCM_VAPID_KEY = "BEybofpYcq0TJmFvivMha3SxZtPVi9444ydLc-NJssYYP8oE7F4l9BdmFEs_ir5vMN6u248S_FXlIY8hRekjOtM";
 
 const FIREBASE_CONFIG = {
   apiKey:            "AIzaSyAlxZ1FVhsfNEnYpamiQkQ9152rl65N-zQ",
@@ -226,19 +226,27 @@ const FIREBASE_CONFIG = {
   appId:             "1:268110919054:web:67018d89c9c8da0f11e0df",
 };
 
-// ── Carga dinámica de scripts (evita duplicados) ──
+// ── Detección de plataforma ──────────────────────────────────────────────────
+const isIOS = () =>
+  (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+const isPWA = () =>
+  window.matchMedia("(display-mode: standalone)").matches ||
+  window.navigator.standalone === true;
+
+// ── Carga dinámica de scripts ────────────────────────────────────────────────
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) return resolve();
     const s = document.createElement("script");
-    s.src = src;
-    s.onload = resolve;
+    s.src = src; s.onload = resolve;
     s.onerror = () => reject(new Error(`Failed to load: ${src}`));
     document.head.appendChild(s);
   });
 }
 
-// ── Singleton: una sola inicialización de FCM ──
+// ── FCM (Android / Chrome) ───────────────────────────────────────────────────
 let _fcmInitPromise = null;
 
 async function initFCM() {
@@ -251,31 +259,26 @@ async function initFCM() {
       if (!window.firebase.apps?.length) window.firebase.initializeApp(FIREBASE_CONFIG);
       if (!window.__fcmMessaging) {
         window.__fcmMessaging = window.firebase.messaging();
-        // Notificaciones con app ABIERTA (foreground):
-        // FCM las suprime por defecto — este handler las muestra igual via SW.
         window.__fcmMessaging.onMessage(payload => {
           const notif = payload.notification || {};
           const data  = payload.data || {};
           showNotifViaSW(
             notif.title || data.title || "Barret Water 💧",
             notif.body  || data.body  || "",
-            notif.icon,
-            data.tag,
-            data.url
+            notif.icon, data.tag, data.url
           );
         });
       }
       return true;
     } catch (e) {
       console.warn("[FCM] initFCM error:", e);
-      _fcmInitPromise = null; // permite reintentos
+      _fcmInitPromise = null;
       return false;
     }
   })();
   return _fcmInitPromise;
 }
 
-// ── Registrar token en RTDB ──
 async function registerFCMToken() {
   try {
     const ok = await initFCM();
@@ -300,7 +303,44 @@ async function registerFCMToken() {
   }
 }
 
-// ── Pedir permiso al usuario + registrar token ──
+// ── Web Push VAPID (iOS PWA) ─────────────────────────────────────────────────
+// iOS no soporta FCM — usa la Web Push API estándar con VAPID directamente.
+async function registerWebPushiOS() {
+  try {
+    const swReg = await navigator.serviceWorker.ready;
+    // Convertir la VAPID key de base64url a Uint8Array
+    const vapidKey = FCM_VAPID_KEY
+      .replace(/-/g, "+").replace(/_/g, "/");
+    const rawKey = Uint8Array.from(atob(vapidKey), c => c.charCodeAt(0));
+
+    const sub = await swReg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: rawKey,
+    });
+
+    // Guardar el endpoint en RTDB bajo /ios_push_subs/
+    const subJson = sub.toJSON();
+    const key = subJson.endpoint.split("/").pop().slice(-30).replace(/[^a-zA-Z0-9]/g, "");
+    await fetch(`${FB}/ios_push_subs/${key}.json`, {
+      method: "PUT",
+      body: JSON.stringify({
+        endpoint:  subJson.endpoint,
+        p256dh:    subJson.keys?.p256dh,
+        auth:      subJson.keys?.auth,
+        ts:        Date.now(),
+        ua:        navigator.userAgent.slice(0, 80),
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+    console.log("[WebPush iOS] Suscripción registrada:", key);
+    return sub;
+  } catch (e) {
+    console.warn("[WebPush iOS] Error al registrar:", e);
+    return null;
+  }
+}
+
+// ── Pedir permiso + registrar según plataforma ───────────────────────────────
 async function requestNotifPermission() {
   if (!("Notification" in window)) return false;
   if (Notification.permission === "denied") return false;
@@ -308,11 +348,15 @@ async function requestNotifPermission() {
     const perm = await Notification.requestPermission();
     if (perm !== "granted") return false;
   }
-  await registerFCMToken();
+  if (isIOS()) {
+    await registerWebPushiOS();
+  } else {
+    await registerFCMToken();
+  }
   return true;
 }
 
-// ── Mostrar notificación via Service Worker (foreground y manual) ──
+// ── Mostrar notificación via SW ──────────────────────────────────────────────
 function showNotifViaSW(title, body, icon = "/icon-192.png", tag = "bw-notif", url = "/") {
   if (!("serviceWorker" in navigator)) return;
   if (Notification.permission !== "granted") return;
@@ -324,7 +368,6 @@ function showNotifViaSW(title, body, icon = "/icon-192.png", tag = "bw-notif", u
     .catch(() => { try { new Notification(title, { body, icon }); } catch {} });
 }
 
-// ── Alias público (compatibilidad con llamadas existentes en el código) ──
 function sendNotif(title, body, icon = "/icon-192.png") {
   showNotifViaSW(title, body, icon);
 }
@@ -1191,6 +1234,7 @@ export default function App() {
   const [tmpZones,     setTmpZones]     = useState(DEFAULT_ZONES);
   const [restoreText,  setRestoreText]  = useState("");
   const [showRestore,  setShowRestore]  = useState(false);
+  const [showIosBanner, setShowIosBanner] = useState(false);
 
   // ── LOAD ──
   useEffect(() => {
@@ -1233,6 +1277,15 @@ export default function App() {
         .register("/firebase-messaging-sw.js")
         .then(reg => console.log("[SW] Registrado:", reg.scope))
         .catch(err => console.warn("[SW] Error al registrar:", err));
+    }
+  }, []);
+
+  // ── Banner iOS: mostrar si es iOS y NO está instalada como PWA ──
+  useEffect(() => {
+    if (isIOS() && !isPWA()) {
+      // Mostrar solo si el usuario no lo cerró antes
+      const dismissed = sessionStorage.getItem("iosBannerDismissed");
+      if (!dismissed) setShowIosBanner(true);
     }
   }, []);
 
@@ -1598,6 +1651,18 @@ export default function App() {
 
       {/* TOAST */}
       {toast && <div style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", background: toast.color, color: "white", padding: "10px 20px", borderRadius: 30, fontSize: 13, fontWeight: 600, zIndex: 999, boxShadow: "0 8px 24px rgba(0,0,0,0.4)", whiteSpace: "nowrap" }}>{toast.msg}</div>}
+
+      {/* BANNER iOS — instalar como PWA para activar notificaciones */}
+      {showIosBanner && (
+        <div style={{ position: "fixed", bottom: 80, left: 12, right: 12, background: "linear-gradient(135deg,#1e3a5f,#0a1628)", border: "1px solid rgba(96,165,250,0.4)", borderRadius: 16, padding: "14px 16px", zIndex: 998, boxShadow: "0 8px 32px rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <span style={{ fontSize: 24, flexShrink: 0 }}>📲</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 4 }}>Activar notificaciones en iPhone</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", lineHeight: 1.5 }}>Tocá <strong style={{color:"#60a5fa"}}>Compartir</strong> → <strong style={{color:"#60a5fa"}}>Agregar a inicio</strong> para recibir notificaciones con la app cerrada.</div>
+          </div>
+          <button onClick={() => { setShowIosBanner(false); sessionStorage.setItem("iosBannerDismissed","1"); }} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 18, cursor: "pointer", padding: 0, flexShrink: 0 }}>✕</button>
+        </div>
+      )}
 
       {/* BIDONES OVERLAY */}
       {showBidones && (
