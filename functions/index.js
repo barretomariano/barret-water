@@ -1,167 +1,114 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// BARRET WATER — Cloud Functions v2
-// Deploy: firebase deploy --only functions
+// BARRET WATER — Cloud Functions v3
+// FCM (Android/Chrome) + Web Push VAPID nativo (iOS PWA)
 // ─────────────────────────────────────────────────────────────────────────────
 const { onValueWritten } = require("firebase-functions/v2/database");
 const { initializeApp }  = require("firebase-admin/app");
 const { getMessaging }   = require("firebase-admin/messaging");
 const { getDatabase }    = require("firebase-admin/database");
+const webpush            = require("web-push");
 
 initializeApp();
 
-// ── Helper: obtener todos los tokens FCM guardados ──────────────────────────
-async function getTokens() {
-  const db   = getDatabase();
-  const snap = await db.ref("barretwater/fcm_tokens").once("value");
+const VAPID_PUBLIC  = "BEybofpYcq0TJmFvivMha3SxZtPVi9444ydLc-NJssYYP8oE7F4l9BdmFEs_ir5vMN6u248S_FXlIY8hRekjOtM";
+const VAPID_PRIVATE = "byWhX1FxiCkMlDmDL7q1Rr1OpeOViMr6Zqz99outd60";
+
+webpush.setVapidDetails("mailto:barretwater@gmail.com", VAPID_PUBLIC, VAPID_PRIVATE);
+
+async function getFCMTokens() {
+  const snap = await getDatabase().ref("barretwater/fcm_tokens").once("value");
   const data = snap.val();
   if (!data) return [];
-  // Los tokens se guardan como objetos { token, ts, ua } — extraer solo el string
-  return Object.values(data)
-    .map(v => (typeof v === "string" ? v : v?.token))
-    .filter(Boolean);
+  return Object.values(data).map(v => (typeof v === "string" ? v : v?.token)).filter(Boolean);
 }
 
-// ── Helper: enviar push a todos los dispositivos ────────────────────────────
-async function sendPush(title, body) {
-  const tokens = await getTokens();
-  if (!tokens.length) {
-    console.log("[FCM] No hay tokens registrados");
-    return;
-  }
+async function getIOSSubs() {
+  const snap = await getDatabase().ref("barretwater/ios_push_subs").once("value");
+  const data = snap.val();
+  if (!data) return [];
+  return Object.entries(data).filter(([,v]) => v?.endpoint && v?.p256dh && v?.auth).map(([k,v]) => ({key:k,...v}));
+}
 
-  const messaging = getMessaging();
-  const results = await messaging.sendEachForMulticast({
+async function sendFCM(title, body) {
+  const tokens = await getFCMTokens();
+  if (!tokens.length) return;
+  const results = await getMessaging().sendEachForMulticast({
     tokens,
-    notification: {
-      title,
-      body,
-      imageUrl: "https://barret-water.vercel.app/icon-192.png",
-    },
-    android: {
-      priority: "high",
-      notification: { sound: "default", channelId: "barret_water" },
-    },
-    apns: {
-      payload: { aps: { sound: "default", badge: 1 } },
-    },
-    webpush: {
-      notification: {
-        icon:   "/icon-192.png",
-        badge:  "/icon-192.png",
-        vibrate: [200, 100, 200],
-      },
-    },
+    notification: { title, body, imageUrl: "https://barret-water.vercel.app/icon-192.png" },
+    android:  { priority: "high", notification: { sound: "default", channelId: "barret_water" } },
+    apns:     { payload: { aps: { sound: "default", badge: 1 } } },
+    webpush:  { notification: { icon: "/icon-192.png", badge: "/icon-192.png", vibrate: [200,100,200] } },
   });
-
-  console.log(`[FCM] Enviado a ${tokens.length} dispositivos:`, title, body);
-
-  // Limpiar tokens inválidos automáticamente
   const db = getDatabase();
   const toDelete = [];
-  results.responses.forEach((resp, i) => {
-    if (!resp.success && (
-      resp.error?.code === "messaging/invalid-registration-token" ||
-      resp.error?.code === "messaging/registration-token-not-registered"
-    )) toDelete.push(tokens[i]);
+  results.responses.forEach((r,i) => {
+    if (!r.success && (r.error?.code === "messaging/invalid-registration-token" || r.error?.code === "messaging/registration-token-not-registered"))
+      toDelete.push(tokens[i]);
   });
-
   if (toDelete.length) {
-    console.log(`[FCM] Limpiando ${toDelete.length} tokens inválidos`);
     const snap = await db.ref("barretwater/fcm_tokens").once("value");
-    const all  = snap.val() || {};
-    for (const [k, v] of Object.entries(all)) {
+    for (const [k,v] of Object.entries(snap.val()||{})) {
       const t = typeof v === "string" ? v : v?.token;
       if (toDelete.includes(t)) await db.ref(`barretwater/fcm_tokens/${k}`).remove();
     }
   }
 }
 
-// ── TRIGGER 1: Nuevo pedido ─────────────────────────────────────────────────
-exports.onNuevoPedido = onValueWritten(
-  { ref: "/barretwater/pedidos_v1", region: "us-central1" },
-  async (event) => {
-    const antes   = event.data.before.val();
-    const despues = event.data.after.val();
-    if (!despues) return;
-
-    const arrAntes   = antes   ? Object.values(antes)   : [];
-    const arrDespues = despues ? Object.values(despues) : [];
-
-    const nuevos = arrDespues.filter(p =>
-      p && !p.entregado && !arrAntes.find(a => a.id === p.id)
-    );
-
-    for (const pedido of nuevos) {
-      const bids = [
-        pedido.bidones20 > 0 ? `${pedido.bidones20}×20L` : "",
-        pedido.bidones12 > 0 ? `${pedido.bidones12}×12L` : "",
-      ].filter(Boolean).join(" ");
-      await sendPush(
-        "📦 Nuevo pedido",
-        `${pedido.nombre || "Cliente"}${bids ? " — " + bids : ""}`
-      );
+async function sendIOS(title, body) {
+  if (!VAPID_PRIVATE) { console.warn("[iOS] VAPID_PRIVATE_KEY no configurada"); return; }
+  const subs = await getIOSSubs();
+  if (!subs.length) return;
+  const db = getDatabase();
+  const payload = JSON.stringify({ title, body, icon: "/icon-192.png" });
+  for (const sub of subs) {
+    try {
+      await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload);
+    } catch (e) {
+      if (e.statusCode === 410 || e.statusCode === 404)
+        await db.ref(`barretwater/ios_push_subs/${sub.key}`).remove();
     }
   }
-);
+}
 
-// ── TRIGGER 2: Nueva venta ──────────────────────────────────────────────────
-exports.onNuevaVenta = onValueWritten(
-  { ref: "/barretwater/history_v5", region: "us-central1" },
-  async (event) => {
-    const antes   = event.data.before.val();
-    const despues = event.data.after.val();
-    if (!despues) return;
+async function sendPush(title, body) {
+  await Promise.allSettled([sendFCM(title, body), sendIOS(title, body)]);
+}
 
-    const diasAntes   = antes   ? Object.values(antes)   : [];
-    const diasDespues = despues ? Object.values(despues) : [];
-
-    const hoy        = new Date().toISOString().slice(0, 10);
-    const diaAntes   = diasAntes.find(d => d.date === hoy);
-    const diaDespues = diasDespues.find(d => d.date === hoy);
-    if (!diaDespues?.ventas) return;
-
-    const ventasAntes   = diaAntes?.ventas  ? Object.values(diaAntes.ventas)  : [];
-    const ventasDespues = diaDespues.ventas ? Object.values(diaDespues.ventas): [];
-
-    const nuevas = ventasDespues.filter(v =>
-      v && !ventasAntes.find(a => a.id === v.id)
-    );
-
-    for (const venta of nuevas) {
-      if (venta.nota?.startsWith("Cobro fiado")) continue;
-      const items = [
-        venta.u20 > 0 ? `${venta.u20}×20L` : "",
-        venta.u12 > 0 ? `${venta.u12}×12L` : "",
-      ].filter(Boolean).join(" ");
-      await sendPush(
-        "💰 Nueva venta",
-        `${venta.nombre || ""}${items ? " — " + items : ""} | $${venta.total || 0}`
-      );
-    }
+exports.onNuevoPedido = onValueWritten({ ref: "/barretwater/pedidos_v1", region: "us-central1" }, async (event) => {
+  const antes = event.data.before.val();
+  const despues = event.data.after.val();
+  if (!despues) return;
+  const arrAntes = antes ? Object.values(antes) : [];
+  const arrDespues = Object.values(despues);
+  for (const p of arrDespues.filter(p => p && !p.entregado && !arrAntes.find(a => a.id === p.id))) {
+    const bids = [p.bidones20>0?`${p.bidones20}×20L`:"", p.bidones12>0?`${p.bidones12}×12L`:""].filter(Boolean).join(" ");
+    await sendPush("📦 Nuevo pedido", `${p.nombre||"Cliente"}${bids?" — "+bids:""}`);
   }
-);
+});
 
-// ── TRIGGER 3: Cierre de caja ───────────────────────────────────────────────
-exports.onCierreCaja = onValueWritten(
-  { ref: "/barretwater/history_v5", region: "us-central1" },
-  async (event) => {
-    const antes   = event.data.before.val();
-    const despues = event.data.after.val();
-    if (!despues) return;
-
-    const diasAntes   = antes   ? Object.values(antes)   : [];
-    const diasDespues = despues ? Object.values(despues) : [];
-
-    const nuevoCierre = diasDespues.find(d =>
-      d.cierreCaja && !diasAntes.find(a => a.date === d.date && a.cierreCaja)
-    );
-
-    if (nuevoCierre) {
-      await sendPush(
-        "🔒 Caja cerrada",
-        `Día ${nuevoCierre.date} — $${nuevoCierre.totalDia || 0} total`
-      );
-    }
+exports.onNuevaVenta = onValueWritten({ ref: "/barretwater/history_v5", region: "us-central1" }, async (event) => {
+  const antes = event.data.before.val();
+  const despues = event.data.after.val();
+  if (!despues) return;
+  const hoy = new Date().toISOString().slice(0,10);
+  const dA = (antes ? Object.values(antes) : []).find(d => d.date === hoy);
+  const dD = Object.values(despues).find(d => d.date === hoy);
+  if (!dD?.ventas) return;
+  const vA = dA?.ventas ? Object.values(dA.ventas) : [];
+  const vD = Object.values(dD.ventas);
+  for (const v of vD.filter(v => v && !vA.find(a => a.id === v.id))) {
+    if (v.nota?.startsWith("Cobro fiado")) continue;
+    const items = [v.u20>0?`${v.u20}×20L`:"", v.u12>0?`${v.u12}×12L`:""].filter(Boolean).join(" ");
+    await sendPush("💰 Nueva venta", `${v.nombre||""}${items?" — "+items:""} | $${v.total||0}`);
   }
-);
+});
 
+exports.onCierreCaja = onValueWritten({ ref: "/barretwater/history_v5", region: "us-central1" }, async (event) => {
+  const antes = event.data.before.val();
+  const despues = event.data.after.val();
+  if (!despues) return;
+  const dA = antes ? Object.values(antes) : [];
+  const dD = Object.values(despues);
+  const cierre = dD.find(d => d.cierreCaja && !dA.find(a => a.date === d.date && a.cierreCaja));
+  if (cierre) await sendPush("🔒 Caja cerrada", `Día ${cierre.date} — $${cierre.totalDia||0} total`);
+});
