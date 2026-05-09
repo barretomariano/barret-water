@@ -1,6 +1,3 @@
-rvice worker · JS
-Copiar
-
 // ─────────────────────────────────────────────────────────────────────────────
 // BARRET WATER — Service Worker v3
 // PWA + FCM Push (app abierta Y cerrada)
