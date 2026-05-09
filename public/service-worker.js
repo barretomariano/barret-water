@@ -3,11 +3,12 @@
 // PWA + FCM Push (app abierta Y cerrada)
 // ─────────────────────────────────────────────────────────────────────────────
  
-// ── WORKBOX MANIFEST INJECTION (obligatorio para CRA + react-app-rewired PWA)
-// react-scripts inyecta automáticamente la lista de archivos a cachear aquí.
-// SIN ESTA LÍNEA el build falla con "Can't find self.__WB_MANIFEST".
+// ── WORKBOX MANIFEST INJECTION ────────────────────────────────────────────────
+// react-scripts busca literalmente la expresión "self.__WB_MANIFEST" en el
+// texto del archivo para inyectar el listado de assets cacheados.
+// Debe aparecer como expresión standalone, no como parte de una asignación.
 // eslint-disable-next-line no-restricted-globals
-const WB_MANIFEST = self.__WB_MANIFEST;
+self.__WB_MANIFEST;
  
 // ─────────────────────────────────────────────────────────────────────────────
 // FIREBASE (compat SDK — única versión que funciona en SW sin bundler)
@@ -152,3 +153,4 @@ self.addEventListener("message", event => {
     self.skipWaiting();
   }
 });
+ 
