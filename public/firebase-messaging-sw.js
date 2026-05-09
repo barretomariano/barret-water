@@ -1,7 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// BARRET WATER — firebase-messaging-sw.js
-// Este nombre es OBLIGATORIO para FCM push notifications.
-// Al no llamarse "service-worker.js", react-scripts NO lo procesa con Workbox.
+// BARRET WATER — firebase-messaging-sw.js v4
+// FCM (Android/Chrome) + Web Push nativo (iOS PWA)
 // ─────────────────────────────────────────────────────────────────────────────
 
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
@@ -20,7 +19,7 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // ── CACHE offline básico ───────────────────────────────────────────────────────
-const CACHE_NAME = "barret-water-v3";
+const CACHE_NAME = "barret-water-v4";
 const PRECACHE   = ["/", "/index.html"];
 
 self.addEventListener("install", event => {
@@ -46,7 +45,6 @@ self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
   if (event.request.url.includes("firebaseio.com")) return;
   if (event.request.url.includes("googleapis.com")) return;
-
   event.respondWith(
     fetch(event.request)
       .then(response => {
@@ -60,7 +58,31 @@ self.addEventListener("fetch", event => {
   );
 });
 
-// ── FCM background (app cerrada) ──────────────────────────────────────────────
+// ── Web Push nativo (iOS PWA) ──────────────────────────────────────────────────
+// iOS no usa FCM — recibe los pushes por el evento estándar "push".
+// El payload viene como JSON: { title, body, icon }
+self.addEventListener("push", event => {
+  if (!event.data) return;
+  let data = {};
+  try { data = event.data.json(); } catch { data = { title: event.data.text() }; }
+
+  const title = data.title || "Barret Water 💧";
+  const body  = data.body  || "";
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon:     data.icon || "/icon-192.png",
+      badge:    "/icon-192.png",
+      tag:      "bw-ios-push",
+      renotify: true,
+      vibrate:  [200, 100, 200],
+      data:     { url: data.url || "/" },
+    })
+  );
+});
+
+// ── FCM background (Android/Chrome — app cerrada) ─────────────────────────────
 messaging.onBackgroundMessage(payload => {
   const notif = payload.notification || {};
   const data  = payload.data || {};
@@ -69,12 +91,12 @@ messaging.onBackgroundMessage(payload => {
 
   self.registration.showNotification(title, {
     body,
-    icon:    notif.icon || "/icon-192.png",
-    badge:   "/icon-192.png",
-    tag:     data.tag || "bw-notif",
+    icon:     notif.icon || "/icon-192.png",
+    badge:    "/icon-192.png",
+    tag:      "bw-notif",
     renotify: true,
-    vibrate: [200, 100, 200],
-    data:    { url: data.url || "/" },
+    vibrate:  [200, 100, 200],
+    data:     { url: data.url || "/" },
   });
 });
 
@@ -99,13 +121,13 @@ self.addEventListener("message", event => {
   if (event.data.type === "SHOW_NOTIFICATION") {
     const { title, body, icon, tag, url } = event.data;
     self.registration.showNotification(title || "Barret Water 💧", {
-      body:    body  || "",
-      icon:    icon  || "/icon-192.png",
-      badge:   "/icon-192.png",
-      tag:     tag   || "bw-foreground",
+      body:     body || "",
+      icon:     icon || "/icon-192.png",
+      badge:    "/icon-192.png",
+      tag:      tag  || "bw-foreground",
       renotify: true,
-      vibrate: [100, 50, 100],
-      data:    { url: url || "/" },
+      vibrate:  [100, 50, 100],
+      data:     { url: url || "/" },
     });
   }
   if (event.data.type === "SKIP_WAITING") self.skipWaiting();
