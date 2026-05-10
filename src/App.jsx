@@ -1294,7 +1294,7 @@ function FinanzasView({ history, prices, fiados, sectors, cv20, cv12, fijosCats,
   const crecimiento = lm.cobrado > 0 ? ((tm.cobrado - lm.cobrado) / lm.cobrado * 100).toFixed(1) : null;
   const cierresDia  = useMemo(() => history.filter(d => d.cierreCaja).sort((a, b) => b.date.localeCompare(a.date)), [history]);
 
-  const tabs = [["resumen", "📊 Resumen"], ["semana", "📅 Semana"], ["mes", "🗓 Mes"], ["cierres", "🔒 Cierres"]];
+  const tabs = [["resumen", "📊 Resumen"], ["semana", "📅 Semana"], ["mes", "🗓 Mes"], ["gastos_hist", "💸 Gastos"], ["fiados", "📋 Fiados"], ["cierres", "🔒 Cierres"]];
 
   return (
     <div>
@@ -1308,10 +1308,18 @@ function FinanzasView({ history, prices, fiados, sectors, cv20, cv12, fijosCats,
 
       {sub === "resumen" && <>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-          <StatBox label="Cobrado este mes" value={fmt(tm.cobrado)} color={th.accent} th={th} sub={crecimiento ? `${crecimiento > 0 ? "▲" : "▼"} ${Math.abs(crecimiento)}% vs anterior` : undefined} />
-          <StatBox label="Utilidad mes" value={fmt(tm.cobrado - tm.gastos)} color="#10B981" th={th} />
-          <StatBox label="Fiado pendiente" value={fmt(fiadosPend)} color="#F59E0B" th={th} />
-          <StatBox label="Gastos mes" value={fmt(tm.gastos)} color="#ef4444" th={th} />
+          <div onClick={() => setSub("mes")} style={{ cursor: "pointer" }}>
+            <StatBox label="Cobrado este mes" value={fmt(tm.cobrado)} color={th.accent} th={th} sub={crecimiento ? `${crecimiento > 0 ? "▲" : "▼"} ${Math.abs(crecimiento)}% vs anterior` : undefined} />
+          </div>
+          <div onClick={() => setSub("semana")} style={{ cursor: "pointer" }}>
+            <StatBox label="Utilidad mes" value={fmt(tm.cobrado - tm.gastos)} color="#10B981" th={th} sub="Tocá → semana" />
+          </div>
+          <div onClick={() => setSub("fiados")} style={{ cursor: "pointer" }}>
+            <StatBox label="Fiado pendiente" value={fmt(fiadosPend)} color="#F59E0B" th={th} sub={fiadosPend > 0 ? "Ver detalle →" : undefined} />
+          </div>
+          <div onClick={() => setSub("gastos_hist")} style={{ cursor: "pointer" }}>
+            <StatBox label="Gastos mes" value={fmt(tm.gastos)} color="#ef4444" th={th} sub={tm.gastos > 0 ? "Ver detalle →" : undefined} />
+          </div>
         </div>
         <GCard th={th} style={{ marginBottom: 12 }}>
           <SectionTitle th={th}>Ingresos por forma de pago</SectionTitle>
@@ -1389,6 +1397,86 @@ function FinanzasView({ history, prices, fiados, sectors, cv20, cv12, fijosCats,
           </>}
         </GCard>
       )}
+
+      {sub === "gastos_hist" && <>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: th.text }}>💸 Gastos del mes</div>
+          <div style={{ fontSize: 13, color: "#ef4444", fontWeight: 700 }}>{fmt(tm.gastos)}</div>
+        </div>
+        {thisMonthDays.filter(d => clampArr(d.gastos).some(g => parseFloat(g.monto) > 0)).length === 0
+          ? <Empty icon="💸" text="Sin gastos registrados este mes" th={th} />
+          : [...thisMonthDays].filter(d => clampArr(d.gastos).some(g => parseFloat(g.monto) > 0))
+              .sort((a, b) => b.date.localeCompare(a.date))
+              .map(d => {
+                const gastosDelDia = clampArr(d.gastos).filter(g => parseFloat(g.monto) > 0);
+                const totalDia = gastosDelDia.reduce((a, g) => a + (parseFloat(g.monto) || 0), 0);
+                const GCOLOR = { operativo: "#8B5CF6", fijo: "#0EA5E9", extraordinario: "#ef4444" };
+                const GICON  = { operativo: "⚙️", fijo: "🔁", extraordinario: "⚠️" };
+                return (
+                  <GCard key={d.date} th={th} style={{ marginBottom: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: th.text }}>{labelDate(d.date)}</div>
+                      <div style={{ fontWeight: 700, color: "#ef4444", fontSize: 14 }}>−{fmt(totalDia)}</div>
+                    </div>
+                    {gastosDelDia.map((g, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", marginBottom: 4, background: `${GCOLOR[g.tipo]||"#64748b"}10`, borderRadius: 8, borderLeft: `3px solid ${GCOLOR[g.tipo]||"#64748b"}` }}>
+                        <div>
+                          <span style={{ fontSize: 12 }}>{GICON[g.tipo]||"💸"} </span>
+                          <span style={{ fontSize: 12, color: th.text, fontWeight: 500 }}>{g.desc || "Sin descripción"}</span>
+                        </div>
+                        <div style={{ fontWeight: 700, color: GCOLOR[g.tipo]||"#ef4444", fontSize: 13 }}>−{fmt(parseFloat(g.monto))}</div>
+                      </div>
+                    ))}
+                  </GCard>
+                );
+              })
+        }
+        {tm.gastos > 0 && (
+          <GCard th={th} style={{ marginTop: 4 }}>
+            <SectionTitle th={th}>Por tipo</SectionTitle>
+            {[["operativo","⚙️ Operativos","#8B5CF6"],["fijo","🔁 Costos fijos","#0EA5E9"],["extraordinario","⚠️ Extraordinarios","#ef4444"]].map(([tipo,label,color]) => {
+              const total = thisMonthDays.reduce((a,d) => a + clampArr(d.gastos).filter(g => g.tipo===tipo).reduce((b,g) => b+(parseFloat(g.monto)||0),0),0);
+              return total > 0 ? <div key={tipo} style={{ display:"flex", justifyContent:"space-between", padding:"8px 10px", marginBottom:5, background:`${color}0d`, borderRadius:9 }}><span style={{fontSize:13,color:th.text}}>{label}</span><span style={{fontWeight:700,color,fontSize:13}}>−{fmt(total)}</span></div> : null;
+            })}
+            <TotalRow label="Total mes" value={fmt(tm.gastos)} color="#ef4444" th={th} />
+          </GCard>
+        )}
+      </>}
+
+      {sub === "fiados" && <>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: th.text }}>📋 Fiados pendientes</div>
+          <div style={{ fontSize: 13, color: "#F59E0B", fontWeight: 700 }}>{fmt(fiadosPend)}</div>
+        </div>
+        {fiados.filter(f => !f.cobrado).length === 0
+          ? <Empty icon="📋" text="Sin fiados pendientes" th={th} />
+          : fiados.filter(f => !f.cobrado).sort((a,b) => (b.monto||0)-(a.monto||0)).map(f => (
+              <GCard key={f.id} th={th} style={{ marginBottom: 8 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div>
+                    <div style={{ fontWeight:600, fontSize:13, color:th.text }}>{f.nombre||"Sin nombre"}</div>
+                    <div style={{ fontSize:11, color:th.textMuted }}>{f.fecha?labelDate(f.fecha):""}{f.desc?` · ${f.desc}`:""}</div>
+                  </div>
+                  <div style={{ fontWeight:700, color:"#F59E0B", fontSize:15 }}>{fmt(f.monto)}</div>
+                </div>
+              </GCard>
+            ))
+        }
+        {fiados.filter(f => f.cobrado).length > 0 && <>
+          <div style={{ fontSize:11, fontWeight:700, color:th.textMuted, margin:"14px 0 8px", textTransform:"uppercase" }}>Últimos cobrados</div>
+          {fiados.filter(f => f.cobrado).slice(-5).reverse().map(f => (
+            <GCard key={f.id} th={th} style={{ marginBottom:6, opacity:0.55 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <div>
+                  <div style={{ fontWeight:600, fontSize:12, color:th.text }}>✅ {f.nombre||"Sin nombre"}</div>
+                  <div style={{ fontSize:10, color:th.textMuted }}>{f.fecha?labelDate(f.fecha):""}</div>
+                </div>
+                <div style={{ fontWeight:600, color:"#10B981", fontSize:13 }}>{fmt(f.monto)}</div>
+              </div>
+            </GCard>
+          ))}
+        </>}
+      </>}
 
       {sub === "cierres" && (
         cierresDia.length === 0 ? <Empty icon="🔒" text="Sin cierres registrados" th={th} /> :
@@ -1841,6 +1929,11 @@ export default function App() {
   const totalSinDevolver = useMemo(() => bidonesSinDevolver.reduce((a, b) => a + b.cant, 0), [bidonesSinDevolver]);
   const fiadosPendTotal  = useMemo(() => fiados.filter(f => !f.cobrado).reduce((a, f) => a + f.monto, 0), [fiados]);
   const cierreSemana     = useMemo(() => calcCierreSemanal(history.filter(d => d.date >= ws), prices, cv20, cv12, fijosCats), [history, ws, prices, cv20, cv12, fijosCats]);
+  const cierreMes        = useMemo(() => {
+    const cm = currentMonth();
+    const days = history.filter(d => d.date.startsWith(cm));
+    return { cobrado: days.reduce((a,d) => a + dayTotals(d,prices).cobrado, 0), gastos: days.reduce((a,d) => a + dayTotals(d,prices).gastos, 0) };
+  }, [history, prices]);
 
   const [selectedCliente, setSelectedCliente] = useState(null);
   const [showAddCliModal, setShowAddCliModal] = useState(false);
@@ -2003,9 +2096,9 @@ export default function App() {
               <div style={{ fontSize: 14, fontWeight: 700, color: th.accent }}>{fmt(todayT.transferencia)}</div>
             </div>
             <div onClick={() => { setMainTab("finanzas"); setSubTab("gastos"); }}
-              style={{ background: todayT.gastos > 0 ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.04)", border: `1px solid ${todayT.gastos > 0 ? "rgba(239,68,68,0.25)" : th.border}`, borderRadius: 13, padding: "10px 12px", cursor: "pointer" }}>
-              <div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase", fontWeight: 600 }}>Gastos</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: todayT.gastos > 0 ? "#ef4444" : th.textDim }}>{todayT.gastos > 0 ? fmt(todayT.gastos) : "—"}</div>
+              style={{ background: (todayT.gastos > 0 || cierreMes.gastos > 0) ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.04)", border: `1px solid ${(todayT.gastos > 0 || cierreMes.gastos > 0) ? "rgba(239,68,68,0.25)" : th.border}`, borderRadius: 13, padding: "10px 12px", cursor: "pointer" }}>
+              <div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase", fontWeight: 600 }}>{todayT.gastos > 0 ? "Gastos hoy" : "Gastos mes"}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: (todayT.gastos > 0 || cierreMes.gastos > 0) ? "#ef4444" : th.textDim }}>{todayT.gastos > 0 ? fmt(todayT.gastos) : cierreMes.gastos > 0 ? fmt(cierreMes.gastos) : "—"}</div>
             </div>
           </div>
 
@@ -2460,7 +2553,37 @@ export default function App() {
           </div>
           {subTab === "dashboard"  && <FinanzasView history={history} prices={prices} fiados={fiados} sectors={sectors} cv20={cv20} cv12={cv12} fijosCats={fijosCats} th={th} />}
           {subTab === "calendario" && <CalendarioView history={history} prices={prices} fiados={fiados} goalArs={goalArs} th={th} onEditDay={date => { setSelectedDate(date); setMainTab("ventas"); setSubTab("caja"); }} />}
-          {subTab === "gastos" && <GastoPanel gastos={clampArr(today.gastos).length ? today.gastos : [{ desc: "", monto: "", tipo: "operativo", cat: "" }]} setGastos={g => setToday(t => ({ ...t, gastos: g }))} fijosCats={fijosCats} onSave={saveGastos} onBack={() => setSubTab("dashboard")} th={th} showAllHistory history={history} prices={prices} />}
+          {subTab === "gastos" && <>
+            <GastoPanel gastos={clampArr(today.gastos).length ? today.gastos : [{ desc: "", monto: "", tipo: "operativo", cat: "" }]} setGastos={g => setToday(t => ({ ...t, gastos: g }))} fijosCats={fijosCats} onSave={saveGastos} onBack={() => setSubTab("dashboard")} th={th} />
+            <div style={{ marginTop: 20 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: th.text, marginBottom: 10 }}>📅 Historial de gastos del mes</div>
+              {history.filter(d => d.date.startsWith(currentMonth()) && clampArr(d.gastos).some(g => parseFloat(g.monto) > 0)).length === 0
+                ? <div style={{ fontSize: 12, color: th.textMuted, textAlign: "center", padding: 16 }}>Sin gastos registrados este mes</div>
+                : [...history].filter(d => d.date.startsWith(currentMonth()) && clampArr(d.gastos).some(g => parseFloat(g.monto) > 0))
+                    .sort((a, b) => b.date.localeCompare(a.date))
+                    .map(d => {
+                      const gastosDelDia = clampArr(d.gastos).filter(g => parseFloat(g.monto) > 0);
+                      const totalDia = gastosDelDia.reduce((a, g) => a + (parseFloat(g.monto) || 0), 0);
+                      const GCOLOR = { operativo: "#8B5CF6", fijo: "#0EA5E9", extraordinario: "#ef4444" };
+                      const GICON  = { operativo: "⚙️", fijo: "🔁", extraordinario: "⚠️" };
+                      return (
+                        <GCard key={d.date} th={th} style={{ marginBottom: 10 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                            <div style={{ fontWeight: 600, fontSize: 13, color: th.text }}>{labelDate(d.date)}</div>
+                            <div style={{ fontWeight: 700, color: "#ef4444", fontSize: 14 }}>−{fmt(totalDia)}</div>
+                          </div>
+                          {gastosDelDia.map((g, i) => (
+                            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", marginBottom: 4, background: , borderRadius: 8, borderLeft:  }}>
+                              <span style={{ fontSize: 12, color: th.text }}>{GICON[g.tipo]||"💸"} {g.desc || "Sin descripción"}</span>
+                              <span style={{ fontWeight: 700, color: GCOLOR[g.tipo]||"#ef4444", fontSize: 13 }}>−{fmt(parseFloat(g.monto))}</span>
+                            </div>
+                          ))}
+                        </GCard>
+                      );
+                    })
+              }
+            </div>
+          </>}
           {subTab === "historial" && <>
             {history.length === 0 && <Empty icon="📅" text="Sin días guardados" th={th} />}
             {[...history].sort((a, b) => String(b.date || "").localeCompare(String(a.date || ""))).map(d => {
