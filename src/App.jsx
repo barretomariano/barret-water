@@ -117,8 +117,21 @@ const ESTADOS_CLIENTE = [
 const fmt       = n => "$" + Math.round(n).toLocaleString("es-AR");
 const uid       = () => (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const clampArr  = arr => Array.isArray(arr) ? arr.filter(Boolean) : [];
-const arDate    = () => new Date(new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" }));
-const todayKey  = () => { const d = arDate(); return d.toISOString().slice(0, 10); };
+const arDate    = () => {
+  // Método robusto: usa Intl para obtener la fecha real en Argentina
+  // evita el bug donde toLocaleString + toISOString se corre al día siguiente pasadas ~21h
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+  });
+  const parts = Object.fromEntries(fmt.formatToParts(new Date()).map(p => [p.type, p.value]));
+  return new Date(`${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`);
+};
+const todayKey  = () => {
+  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires", year: "numeric", month: "2-digit", day: "2-digit" });
+  return fmt.format(new Date());
+};
 const todayDow  = () => arDate().getDay();
 const labelDate = iso => new Date(iso + "T12:00:00").toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" });
 const labelDateLong = iso => new Date(iso + "T12:00:00").toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
@@ -936,12 +949,13 @@ function CierreCajaModal({ day, prices, sectors, onCerrar, onClose, th }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // CALENDARIO VIEW
 // ─────────────────────────────────────────────────────────────────────────────
-function CalendarioView({ history, prices, fiados, goalArs, th }) {
+function CalendarioView({ history, prices, fiados, goalArs, th, onEditDay }) {
   const [viewMonth, setViewMonth] = useState(currentMonth());
+  const [selectedDay, setSelectedDay] = useState(null);
 
   const { cells, monthTotal, monthFiados, activeDays, maxCobrado } = useMemo(() => {
     const [y, m] = viewMonth.split("-").map(Number);
-    const firstDow   = new Date(y, m - 1, 1).getDay();
+    const firstDow    = new Date(y, m - 1, 1).getDay();
     const daysInMonth = new Date(y, m, 0).getDate();
     const cells = [];
     for (let i = 0; i < firstDow; i++) cells.push(null);
@@ -959,8 +973,13 @@ function CalendarioView({ history, prices, fiados, goalArs, th }) {
     return { cells, monthTotal, monthFiados, activeDays, maxCobrado };
   }, [viewMonth, history, prices, fiados]);
 
-  const prevM = () => { const d = new Date(viewMonth + "-01"); d.setMonth(d.getMonth() - 1); setViewMonth(d.toISOString().slice(0, 7)); };
-  const nextM = () => { const d = new Date(viewMonth + "-01"); d.setMonth(d.getMonth() + 1); const nm = d.toISOString().slice(0, 7); if (nm <= currentMonth()) setViewMonth(nm); };
+  const prevM = () => { const d = new Date(viewMonth + "-01"); d.setMonth(d.getMonth() - 1); setViewMonth(d.toISOString().slice(0, 7)); setSelectedDay(null); };
+  const nextM = () => { const d = new Date(viewMonth + "-01"); d.setMonth(d.getMonth() + 1); const nm = d.toISOString().slice(0, 7); if (nm <= currentMonth()) { setViewMonth(nm); setSelectedDay(null); } };
+
+  const selCell = selectedDay ? cells.find(c => c && c.iso === selectedDay) : null;
+  const selT    = selCell?.t || null;
+  const isSelToday = selectedDay === todayKey();
+  const isSelFuture = selectedDay > todayKey();
 
   return (
     <div>
@@ -983,11 +1002,14 @@ function CalendarioView({ history, prices, fiados, goalArs, th }) {
         {cells.map((cell, i) => {
           if (!cell) return <div key={`e${i}`} />;
           const isHoy    = cell.iso === todayKey();
+          const isSel    = cell.iso === selectedDay;
           const hasSales = cell.t && cell.t.cobrado > 0;
           const pct      = hasSales ? cell.t.cobrado / maxCobrado : 0;
           return (
-            <div key={cell.iso} style={{ aspectRatio: "1", background: hasSales ? `rgba(56,189,248,${0.08 + pct * 0.5})` : "rgba(255,255,255,0.02)", borderRadius: 8, border: `1.5px solid ${isHoy ? th.accent : hasSales ? "rgba(56,189,248,0.25)" : th.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 2, position: "relative" }}>
-              <span style={{ fontSize: 11, fontWeight: isHoy ? 700 : 400, color: isHoy ? th.accent : th.text }}>{new Date(cell.iso + "T12:00:00").getDate()}</span>
+            <div key={cell.iso}
+              onClick={() => setSelectedDay(isSel ? null : cell.iso)}
+              style={{ aspectRatio: "1", background: isSel ? `${th.accent}30` : hasSales ? `rgba(56,189,248,${0.08 + pct * 0.5})` : "rgba(255,255,255,0.02)", borderRadius: 8, border: `1.5px solid ${isSel ? th.accent : isHoy ? th.accent : hasSales ? "rgba(56,189,248,0.25)" : th.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 2, cursor: "pointer", transition: "all 0.15s", position: "relative" }}>
+              <span style={{ fontSize: 11, fontWeight: isHoy || isSel ? 700 : 400, color: isSel ? th.accent : isHoy ? th.accent : th.text }}>{new Date(cell.iso + "T12:00:00").getDate()}</span>
               {hasSales && <span style={{ fontSize: 7, color: th.accent, fontWeight: 600, lineHeight: 1 }}>{fmt(cell.t.cobrado).replace("$", "")}</span>}
               {cell.day?.cierreCaja && <span style={{ position: "absolute", top: 1, right: 2, fontSize: 7 }}>🔒</span>}
               {cell.t?.gastos > 0 && <span style={{ position: "absolute", bottom: 1, right: 2, fontSize: 7 }}>💸</span>}
@@ -995,15 +1017,64 @@ function CalendarioView({ history, prices, fiados, goalArs, th }) {
           );
         })}
       </div>
+
+      {/* Panel del día seleccionado */}
+      {selectedDay && !isSelFuture && (
+        <div style={{ marginBottom: 20, background: "rgba(56,189,248,0.05)", border: `1px solid ${th.accent}30`, borderRadius: 16, padding: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: th.accent }}>{labelDateLong(selectedDay)}</div>
+              {selCell?.day?.cierreCaja && <span style={{ fontSize: 11, color: "#10B981" }}>🔒 Caja cerrada</span>}
+            </div>
+            <button onClick={() => setSelectedDay(null)} style={{ ...btnGhost(th), padding: "4px 10px", fontSize: 16 }}>×</button>
+          </div>
+
+          {selT ? <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+              <StatBox label="Cobrado" value={fmt(selT.cobrado)} color={th.accent} th={th} />
+              <StatBox label="Bidones" value={`${selT.u20 + selT.u12}`} color="#8B5CF6" th={th} />
+              {selT.efectivo > 0 && <StatBox label="Efectivo" value={fmt(selT.efectivo)} color="#10B981" th={th} />}
+              {selT.transferencia > 0 && <StatBox label="Transfer." value={fmt(selT.transferencia)} color={th.accent} th={th} />}
+              {selT.fiado > 0 && <StatBox label="Fiado" value={fmt(selT.fiado)} color="#F59E0B" th={th} />}
+              {selT.gastos > 0 && <StatBox label="Gastos" value={fmt(selT.gastos)} color="#ef4444" th={th} />}
+            </div>
+            {clampArr(selCell.day?.ventas).length > 0 && <>
+              <div style={{ fontSize: 11, fontWeight: 600, color: th.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Ventas del día</div>
+              {clampArr(selCell.day.ventas).map(v => {
+                const monto = v.montoManual != null ? v.montoManual : ((v.u20||0)*prices.p20 + (v.u12||0)*prices.p12);
+                const tipo  = PAGO_TIPOS.find(t => t.id === v.pago) || PAGO_TIPOS[0];
+                return (
+                  <div key={v.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 10px", marginBottom: 5, background: "rgba(255,255,255,0.04)", borderRadius: 9, borderLeft: `2px solid ${tipo.color}` }}>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: th.text }}>{v.nombre}</div>
+                      <div style={{ fontSize: 10, color: th.textMuted }}>{[v.u20>0?`${v.u20}×20L`:"", v.u12>0?`${v.u12}×12L`:""].filter(Boolean).join(" · ")} · {tipo.label}</div>
+                    </div>
+                    <div style={{ fontWeight: 700, color: tipo.color, fontSize: 13 }}>{fmt(monto)}</div>
+                  </div>
+                );
+              })}
+            </>}
+          </> : <div style={{ textAlign: "center", padding: "16px 0", color: th.textMuted, fontSize: 13 }}>Sin actividad registrada</div>}
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
+            <button onClick={() => onEditDay && onEditDay(selectedDay)} style={{ padding: "10px", background: `${th.accent}15`, border: `1px solid ${th.accent}30`, borderRadius: 11, color: th.accent, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>✏️ {selCell?.day ? "Editar día" : "Agregar ventas"}</button>
+            {selCell?.day && !selCell.day.cierreCaja && (
+              <button onClick={() => onEditDay && onEditDay(selectedDay)} style={{ padding: "10px", background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: 11, color: "#10B981", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>🔒 Cerrar caja</button>
+            )}
+          </div>
+        </div>
+      )}
+
       <SectionTitle th={th}>Días del mes</SectionTitle>
       {[...history].filter(d => d.date.startsWith(viewMonth)).sort((a, b) => b.date.localeCompare(a.date)).map(d => {
         const t = dayTotals(d, prices);
         return (
-          <GCard key={d.date} th={th} style={{ marginBottom: 8, padding: "10px 14px" }}>
+          <GCard key={d.date} th={th} style={{ marginBottom: 8, padding: "10px 14px", cursor: "pointer", border: d.date === selectedDay ? `1.5px solid ${th.accent}` : `1px solid ${th.border}` }} onClick={() => setSelectedDay(d.date === selectedDay ? null : d.date)}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <div style={{ fontWeight: 600, fontSize: 13, color: th.text }}>{labelDate(d.date)} {d.cierreCaja ? "🔒" : ""}</div>
                 <div style={{ fontSize: 11, color: th.textMuted }}>{d.ventas?.length || 0} ventas · {t.u20 + t.u12} bidones</div>
+                {t.fiado > 0 && <div style={{ fontSize: 11, color: "#F59E0B" }}>📋 Fiados: {fmt(t.fiado)}</div>}
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontWeight: 700, color: th.accent, fontSize: 14 }}>{fmt(t.cobrado)}</div>
@@ -1014,6 +1085,131 @@ function CalendarioView({ history, prices, fiados, goalArs, th }) {
         );
       })}
       {!history.some(d => d.date.startsWith(viewMonth)) && <Empty icon="📅" text="Sin actividad este mes" th={th} />}
+    </div>
+  );
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CLIENTE CHART VIEW
+// ─────────────────────────────────────────────────────────────────────────────
+function ClienteChartView({ cliente, history, prices, fiados, th, onClose }) {
+  const ventasCliente = useMemo(() => {
+    const result = [];
+    clampArr(history).forEach(d => {
+      clampArr(d.ventas).filter(v => v.clienteId === cliente.id).forEach(v => {
+        const monto = v.montoManual != null ? v.montoManual : ((v.u20||0)*prices.p20 + (v.u12||0)*prices.p12);
+        result.push({ date: d.date, month: d.date.slice(0,7), u20: v.u20||0, u12: v.u12||0, monto, pago: v.pago });
+      });
+    });
+    return result.sort((a,b) => a.date.localeCompare(b.date));
+  }, [cliente.id, history, prices]);
+
+  const porMes = useMemo(() => {
+    const meses = {};
+    ventasCliente.forEach(v => {
+      if (!meses[v.month]) meses[v.month] = { month: v.month, u20: 0, u12: 0, monto: 0, visitas: 0 };
+      meses[v.month].u20 += v.u20;
+      meses[v.month].u12 += v.u12;
+      meses[v.month].monto += v.monto;
+      meses[v.month].visitas += 1;
+    });
+    return Object.values(meses).sort((a,b) => a.month.localeCompare(b.month)).slice(-6);
+  }, [ventasCliente]);
+
+  const totalCompras  = ventasCliente.reduce((a,v) => a + v.monto, 0);
+  const totalBidones  = ventasCliente.reduce((a,v) => a + v.u20 + v.u12, 0);
+  const totalVisitas  = ventasCliente.length;
+  const fiadosPend    = clampArr(fiados).filter(f => f.clienteId === cliente.id && !f.cobrado).reduce((a,f) => a + f.monto, 0);
+  const ultimaCompra  = ventasCliente.length ? ventasCliente[ventasCliente.length-1].date : null;
+  const maxMonto      = Math.max(...porMes.map(m => m.monto), 1);
+  const maxBidones    = Math.max(...porMes.map(m => m.u20 + m.u12), 1);
+
+  const mesLabel = iso => new Date(iso + "-15").toLocaleDateString("es-AR", { month: "short" });
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 500, overflowY: "auto", padding: 16 }}>
+      <div style={{ maxWidth: 480, margin: "0 auto" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 18, color: th.text }}>{cliente.nombre}</div>
+            <div style={{ fontSize: 12, color: th.textMuted }}>Historial completo</div>
+          </div>
+          <button onClick={onClose} style={{ ...btnGhost(th), padding: "8px 14px", fontSize: 16 }}>×</button>
+        </div>
+
+        {/* Stats resumen */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+          <StatBox label="Total compras" value={fmt(totalCompras)} color={th.accent} th={th} />
+          <StatBox label="Bidones totales" value={totalBidones} color="#8B5CF6" th={th} />
+          <StatBox label="Visitas totales" value={totalVisitas} color="#10B981" th={th} />
+          {fiadosPend > 0
+            ? <StatBox label="Fiado pendiente" value={fmt(fiadosPend)} color="#F59E0B" th={th} />
+            : <StatBox label="Última compra" value={ultimaCompra ? labelDate(ultimaCompra) : "—"} color={th.textMuted} th={th} />
+          }
+        </div>
+
+        {porMes.length === 0 && <Empty icon="📊" text="Sin compras registradas" th={th} />}
+
+        {porMes.length > 0 && <>
+          {/* Chart bidones por mes */}
+          <GCard th={th} style={{ marginBottom: 12 }}>
+            <SectionTitle th={th}>Bidones por mes</SectionTitle>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 90, marginBottom: 6 }}>
+              {porMes.map(m => {
+                const tot = m.u20 + m.u12;
+                const h   = Math.max((tot / maxBidones) * 80, 4);
+                return (
+                  <div key={m.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                    <div style={{ fontSize: 9, color: th.accent, fontWeight: 700 }}>{tot}</div>
+                    <div style={{ width: "100%", height: h, borderRadius: "4px 4px 0 0", background: `linear-gradient(to top, ${th.accent}, #38bdf8)`, position: "relative", overflow: "hidden" }}>
+                      {m.u20 > 0 && <div style={{ position: "absolute", bottom: 0, width: "100%", height: `${(m.u20/tot)*100}%`, background: th.accent, opacity: 0.8 }} />}
+                    </div>
+                    <div style={{ fontSize: 9, color: th.textMuted }}>{mesLabel(m.month)}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", gap: 12, fontSize: 10, color: th.textMuted }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: th.accent, display: "inline-block" }} />20L</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: "#38bdf8", display: "inline-block" }} />12L</span>
+            </div>
+          </GCard>
+
+          {/* Chart monto por mes */}
+          <GCard th={th} style={{ marginBottom: 12 }}>
+            <SectionTitle th={th}>Facturación por mes</SectionTitle>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 90, marginBottom: 6 }}>
+              {porMes.map(m => {
+                const h = Math.max((m.monto / maxMonto) * 80, 4);
+                return (
+                  <div key={m.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                    <div style={{ fontSize: 8, color: "#10B981", fontWeight: 700 }}>{fmt(m.monto).replace("$","")}</div>
+                    <div style={{ width: "100%", height: h, borderRadius: "4px 4px 0 0", background: "linear-gradient(to top, #10B981, #34d399)" }} />
+                    <div style={{ fontSize: 9, color: th.textMuted }}>{mesLabel(m.month)}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </GCard>
+
+          {/* Detalle por mes */}
+          <GCard th={th}>
+            <SectionTitle th={th}>Detalle por mes</SectionTitle>
+            {[...porMes].reverse().map(m => (
+              <div key={m.month} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", marginBottom: 6, background: "rgba(255,255,255,0.03)", borderRadius: 9 }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: th.text, textTransform: "capitalize" }}>
+                    {new Date(m.month + "-15").toLocaleDateString("es-AR", { month: "long", year: "numeric" })}
+                  </div>
+                  <div style={{ fontSize: 10, color: th.textMuted }}>{m.u20>0?`${m.u20}×20L `:""}{m.u12>0?`${m.u12}×12L`:""} · {m.visitas} visita{m.visitas!==1?"s":""}</div>
+                </div>
+                <div style={{ fontWeight: 700, color: th.accent, fontSize: 14 }}>{fmt(m.monto)}</div>
+              </div>
+            ))}
+          </GCard>
+        </>}
+      </div>
     </div>
   );
 }
@@ -1598,11 +1794,14 @@ export default function App() {
   const fiadosPendTotal  = useMemo(() => fiados.filter(f => !f.cobrado).reduce((a, f) => a + f.monto, 0), [fiados]);
   const cierreSemana     = useMemo(() => calcCierreSemanal(history.filter(d => d.date >= ws), prices, cv20, cv12, fijosCats), [history, ws, prices, cv20, cv12, fijosCats]);
 
+  const [selectedCliente, setSelectedCliente] = useState(null);
+
   const clientesFiltrados = useMemo(() => {
     let list = clampArr(clientes).filter(c => c && typeof c === "object");
     if (cliZoneFilter !== "todas") list = list.filter(c => c.zona === cliZoneFilter);
     if (cliSearch) { const q = cliSearch.toLowerCase(); list = list.filter(c => (c.nombre || "").toLowerCase().includes(q) || (c.direccion || "").toLowerCase().includes(q) || String(c.tel || "").includes(cliSearch)); }
-    return list;
+    // Orden alfabético
+    return list.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || "", "es-AR"));
   }, [clientes, cliSearch, cliZoneFilter]);
 
   const clienteRanking = useMemo(() => {
@@ -1651,6 +1850,18 @@ export default function App() {
 
       {/* TOAST */}
       {toast && <div style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", background: toast.color, color: "white", padding: "10px 20px", borderRadius: 30, fontSize: 13, fontWeight: 600, zIndex: 999, boxShadow: "0 8px 24px rgba(0,0,0,0.4)", whiteSpace: "nowrap" }}>{toast.msg}</div>}
+
+      {/* CLIENTE CHART MODAL */}
+      {selectedCliente && (
+        <ClienteChartView
+          cliente={selectedCliente}
+          history={history}
+          prices={prices}
+          fiados={fiados}
+          th={th}
+          onClose={() => setSelectedCliente(null)}
+        />
+      )}
 
       {/* BANNER iOS — instalar como PWA para activar notificaciones */}
       {showIosBanner && (
@@ -1739,13 +1950,12 @@ export default function App() {
                     {cli.notaUltimaVisita && <div style={{ fontSize: 10, color: th.textMuted, marginTop: 2, fontStyle: "italic" }}>"{cli.notaUltimaVisita}"</div>}
                   </div>
                 </div>
-                {!yaEntregado && (
-                  <div style={{ display: "grid", gridTemplateColumns: mapsUrl ? "1fr 1fr 1fr" : "1fr 1fr", gap: 8 }}>
+                <div style={{ display: "grid", gridTemplateColumns: mapsUrl ? (yaEntregado ? "1fr" : "auto 1fr 1fr 1fr") : (yaEntregado ? "1fr" : "1fr 1fr 1fr"), gap: 8 }}>
                     {mapsUrl && <a href={mapsUrl} target="_blank" rel="noreferrer" style={{ padding: "9px 4px", background: `${th.accent}14`, border: `1px solid ${th.accent}30`, borderRadius: 10, color: th.accent, textDecoration: "none", fontWeight: 600, fontSize: 12, textAlign: "center", display: "block" }}>📍 Maps</a>}
-                    <button onClick={() => setEntregarModal({ ...cli, clienteId: cli.id, u20: cli.u20Estimado || 0, u12: cli.u12Estimado || 0, esProgramado: true })} style={{ padding: "9px 4px", background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: 10, color: "#10B981", cursor: "pointer", fontWeight: 700, fontSize: 12 }}>✅ Entregar</button>
-                    <button onClick={() => setNuevoPedidoModal({ id: `prog-${cli.id}`, clienteId: cli.id, nombre: cli.nombre, direccion: cli.direccion || "", u20: cli.u20Estimado || 0, u12: cli.u12Estimado || 0, nota: "", esProgramado: true })} style={{ padding: "9px 4px", background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)", borderRadius: 10, color: "#8B5CF6", cursor: "pointer", fontWeight: 600, fontSize: 12 }}>✏️ Ajustar</button>
+                    {!yaEntregado && <button onClick={() => setEntregarModal({ ...cli, clienteId: cli.id, u20: cli.u20Estimado || 0, u12: cli.u12Estimado || 0, esProgramado: true })} style={{ padding: "9px 4px", background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: 10, color: "#10B981", cursor: "pointer", fontWeight: 700, fontSize: 12 }}>✅ Entregar</button>}
+                    {!yaEntregado && <button onClick={() => setNuevoPedidoModal({ id: `prog-${cli.id}`, clienteId: cli.id, nombre: cli.nombre, direccion: cli.direccion || "", u20: cli.u20Estimado || 0, u12: cli.u12Estimado || 0, nota: "", esProgramado: true })} style={{ padding: "9px 4px", background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)", borderRadius: 10, color: "#8B5CF6", cursor: "pointer", fontWeight: 600, fontSize: 12 }}>✏️ Ajustar</button>}
+                    <button onClick={() => { const nc = clientes.map(x => x.id !== cli.id ? x : { ...x, frecuenciaTipo: "ninguna", diasSemana: [], frecuenciaDias: 7 }); setClientes(nc); sset("clientes_v1", nc); showToast("🗑️ Visita eliminada"); }} style={{ padding: "9px 4px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10, color: "#ef4444", cursor: "pointer", fontWeight: 600, fontSize: 12 }}>🗑️ Quitar</button>
                   </div>
-                )}
               </GCard>
             );
           })}
@@ -1790,7 +2000,7 @@ export default function App() {
         {/* ═══════════════════════ VENTAS ═══════════════════════ */}
         {mainTab === "ventas" && <>
           <div style={{ display: "flex", gap: 6, marginBottom: 16, overflowX: "auto" }}>
-            {[["caja", "📦 Caja"], ["fiados", "💳 Fiados"], ["gastos", "💸 Gastos"], ["historial", "📅 Historial"]].map(([k, l]) => (
+            {[["caja", "📦 Caja"], ["fiados", "💳 Fiados"]].map(([k, l]) => (
               <button key={k} onClick={() => setSubTab(k)} style={{ padding: "8px 14px", borderRadius: 20, border: `1px solid ${subTab === k ? th.accent : th.border}`, background: subTab === k ? `${th.accent}20` : "transparent", color: subTab === k ? th.accent : th.textMuted, cursor: "pointer", fontSize: 12, fontWeight: subTab === k ? 700 : 400, whiteSpace: "nowrap", flexShrink: 0 }}>{l}</button>
             ))}
           </div>
@@ -1843,7 +2053,10 @@ export default function App() {
                   </div>
                 );
               })}
-              <button onClick={() => setSaleModal("new")} style={{ ...btnPrimary, marginTop: 4 }}>+ Nueva venta</button>
+              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                <button onClick={() => setSaleModal("new")} style={{ ...btnPrimary, flex: 1 }}>+ Nueva venta</button>
+                <button onClick={() => setSubTab("gastos")} style={{ flex: 1, padding: "12px", background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.3)", borderRadius: 12, color: "#8B5CF6", cursor: "pointer", fontWeight: 700, fontSize: 14 }}>+ Nuevo gasto</button>
+              </div>
             </div>
 
             {clampArr(today.ventas).length > 0 && <>
@@ -2055,6 +2268,7 @@ export default function App() {
                     {c.visitas > 0 && <div style={{ fontSize: 10, color: th.textDim }}>{c.visitas} visita{c.visitas !== 1 ? "s" : ""}{c.ultimaVisita ? ` · última hace ${diffDays(c.ultimaVisita, todayKey())}d` : ""}</div>}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <button onClick={() => setSelectedCliente(c)} style={{ ...btnGhost(th), padding: "4px 9px", fontSize: 12 }}>📊</button>
                     <button onClick={() => { setEditingCli(c.id); setCForm({ nombre: c.nombre, tel: c.tel || "", direccion: c.direccion || "", nota: c.nota || "", estado: c.estado || "activo", zona: c.zona || "", frecuenciaTipo: c.frecuenciaTipo || "ninguna", frecuenciaDias: c.frecuenciaDias || 7, diasSemana: clampArr(c.diasSemana), u20Estimado: c.u20Estimado || 0, u12Estimado: c.u12Estimado || 0 }); window.scrollTo(0, 0); }} style={{ ...btnGhost(th), padding: "4px 9px", fontSize: 12 }}>✏️</button>
                     <button onClick={() => deleteCliente(c.id)} style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)", borderRadius: 8, color: "#ef4444", cursor: "pointer", padding: "4px 9px", fontSize: 13 }}>🗑️</button>
                   </div>
@@ -2083,12 +2297,39 @@ export default function App() {
         {/* ═══════════════════════ FINANZAS ═══════════════════════ */}
         {mainTab === "finanzas" && <>
           <div style={{ display: "flex", gap: 6, marginBottom: 16, overflowX: "auto", paddingBottom: 4 }}>
-            {[["dashboard", "📊 Dashboard"], ["calendario", "📅 Calendario"], ["metricas", "📈 Métricas"]].map(([k, l]) => (
+            {[["dashboard", "📊 Dashboard"], ["calendario", "📅 Calendario"], ["gastos", "💸 Gastos"], ["historial", "📅 Historial"], ["metricas", "📈 Métricas"]].map(([k, l]) => (
               <button key={k} onClick={() => setSubTab(k)} style={{ padding: "8px 14px", borderRadius: 20, border: `1px solid ${subTab === k ? th.accent : th.border}`, background: subTab === k ? `${th.accent}20` : "transparent", color: subTab === k ? th.accent : th.textMuted, cursor: "pointer", fontSize: 12, fontWeight: subTab === k ? 700 : 400, whiteSpace: "nowrap", flexShrink: 0 }}>{l}</button>
             ))}
           </div>
           {subTab === "dashboard"  && <FinanzasView history={history} prices={prices} fiados={fiados} sectors={sectors} cv20={cv20} cv12={cv12} fijosCats={fijosCats} th={th} />}
-          {subTab === "calendario" && <CalendarioView history={history} prices={prices} fiados={fiados} goalArs={goalArs} th={th} />}
+          {subTab === "calendario" && <CalendarioView history={history} prices={prices} fiados={fiados} goalArs={goalArs} th={th} onEditDay={date => { setSelectedDate(date); setMainTab("ventas"); setSubTab("caja"); }} />}
+          {subTab === "gastos" && <GastoPanel gastos={clampArr(today.gastos).length ? today.gastos : [{ desc: "", monto: "", tipo: "operativo", cat: "" }]} setGastos={g => setToday(t => ({ ...t, gastos: g }))} fijosCats={fijosCats} onSave={saveGastos} onBack={() => setSubTab("dashboard")} th={th} showAllHistory history={history} prices={prices} />}
+          {subTab === "historial" && <>
+            {history.length === 0 && <Empty icon="📅" text="Sin días guardados" th={th} />}
+            {[...history].sort((a, b) => String(b.date || "").localeCompare(String(a.date || ""))).map(d => {
+              const t = dayTotals(d, prices);
+              return (
+                <GCard key={d.date} th={th} style={{ marginBottom: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: th.text }}>{labelDate(d.date)} {d.cierreCaja ? "🔒" : ""}</div>
+                      <div style={{ fontSize: 11, color: th.textMuted }}>{d.ventas?.length || 0} ventas · {t.u20 + t.u12} bidones</div>
+                      {t.fiado > 0 && <div style={{ fontSize: 11, color: "#F59E0B" }}>📋 Fiados: {fmt(t.fiado)}</div>}
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: th.accent }}>{fmt(t.cobrado)}</div>
+                      {t.gastos > 0 && <div style={{ fontSize: 11, color: th.textMuted }}>−{fmt(t.gastos)}</div>}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => { setSelectedDate(d.date); setMainTab("ventas"); setSubTab("caja"); }} style={{ flex: 1, padding: "8px", ...btnGhost(th), textAlign: "center", fontSize: 12, fontWeight: 600 }}>✏️ Editar</button>
+                    <button onClick={() => buildWADia(d)} style={{ flex: 1, padding: "8px", background: "rgba(37,211,102,0.1)", border: "1px solid rgba(37,211,102,0.22)", borderRadius: 9, color: "#25d366", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>📤 WA</button>
+                    <button onClick={() => askConfirm("¿Eliminar este día?", async () => { const nh = history.filter(x => x.date !== d.date); setHistory(nh); await sset("history_v5", nh); setConfirm(null); showToast("🗑️ Eliminado", "#ef4444"); })} style={{ padding: "8px 10px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)", borderRadius: 9, color: "#ef4444", cursor: "pointer", fontSize: 12 }}>🗑️</button>
+                  </div>
+                </GCard>
+              );
+            })}
+          </>}
           {subTab === "metricas"   && <>
             <GCard th={th} style={{ marginBottom: 12 }}>
               <SectionTitle th={th}>Rentabilidad por producto</SectionTitle>
