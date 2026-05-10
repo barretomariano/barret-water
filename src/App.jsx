@@ -1843,6 +1843,7 @@ export default function App() {
   const cierreSemana     = useMemo(() => calcCierreSemanal(history.filter(d => d.date >= ws), prices, cv20, cv12, fijosCats), [history, ws, prices, cv20, cv12, fijosCats]);
 
   const [selectedCliente, setSelectedCliente] = useState(null);
+  const [showAddCliModal, setShowAddCliModal] = useState(false);
 
   const clientesFiltrados = useMemo(() => {
     let list = clampArr(clientes).filter(c => c && typeof c === "object");
@@ -1886,7 +1887,7 @@ export default function App() {
 
   // ── RENDER ──
   return (
-    <div style={{ minHeight: "100vh", background: th.bg, fontFamily: "'DM Sans',system-ui,sans-serif", color: th.text, paddingBottom: 72 }}>
+    <div style={{ minHeight: "100vh", background: th.bg, fontFamily: "'DM Sans',system-ui,sans-serif", color: th.text, paddingBottom: 100 }}>
 
       {/* MODALS */}
       {saleModal    && <SaleModal clientes={clientes} prices={prices} editVenta={saleModal !== "new" ? saleModal : null} onSave={saleModal === "new" ? addVenta : editVentaFn} onAddCliente={handleAddClienteFromModal} onClose={() => setSaleModal(null)} th={th} />}
@@ -2019,15 +2020,6 @@ export default function App() {
             </div>
           )}
 
-          {/* ── CALENDARIO WIDGET ── */}
-          <GCard th={th} style={{ marginBottom: 12, padding: "14px 12px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: th.text }}>📅 Este mes</div>
-              <button onClick={() => { setMainTab("finanzas"); setSubTab("calendario"); }} style={{ fontSize: 11, color: th.accent, background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>Ver completo →</button>
-            </div>
-            <CalendarioMiniWidget history={history} prices={prices} th={th} onDayClick={date => { setSelectedDate(date); setMainTab("ventas"); setSubTab("caja"); }} />
-          </GCard>
-
           {/* ── WIDGET: Top clientes del mes ── */}
           {clienteRanking.length > 0 && (
             <GCard th={th} style={{ marginBottom: 12 }}>
@@ -2130,6 +2122,15 @@ export default function App() {
             );
           })}
           {pedidos.length > 1 && <div style={{ textAlign: "center", fontSize: 11, color: th.textDim, marginTop: 4 }}>💡 Arrastrá para reordenar</div>}
+
+          {/* ── CALENDARIO WIDGET ── */}
+          <GCard th={th} style={{ marginBottom: 12, padding: "14px 12px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: th.text }}>📅 Este mes</div>
+              <button onClick={() => { setMainTab("finanzas"); setSubTab("calendario"); }} style={{ fontSize: 11, color: th.accent, background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>Ver completo →</button>
+            </div>
+            <CalendarioMiniWidget history={history} prices={prices} th={th} onDayClick={date => { setSelectedDate(date); setMainTab("ventas"); setSubTab("caja"); }} />
+          </GCard>
         </>}
 
         {/* ═══════════════════════ VENTAS ═══════════════════════ */}
@@ -2296,76 +2297,97 @@ export default function App() {
             </div>
           </GCard>
 
-          <GCard th={th} style={{ marginBottom: 16 }}>
-            <SectionTitle th={th}>{editingCli ? "✏️ Editar cliente" : "👤 Agregar cliente"}</SectionTitle>
-            <input type="text" placeholder="Nombre *" value={cForm.nombre} onChange={e => setCForm(f => ({ ...f, nombre: e.target.value }))} style={{ ...inputStyle(th), marginBottom: 8 }} />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
-              <div><Label th={th}>Teléfono</Label><input type="text" value={cForm.tel} onChange={e => setCForm(f => ({ ...f, tel: e.target.value }))} style={inputStyle(th)} /></div>
-              <div><Label th={th}>Dirección</Label><input type="text" value={cForm.direccion} onChange={e => setCForm(f => ({ ...f, direccion: e.target.value }))} style={inputStyle(th)} /></div>
-            </div>
-            <Label th={th}>Zona</Label>
-            <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-              <button onClick={() => setCForm(f => ({ ...f, zona: "" }))} style={{ padding: "5px 12px", borderRadius: 20, border: `1px solid ${!cForm.zona ? th.accent : th.border}`, background: !cForm.zona ? `${th.accent}20` : "transparent", color: !cForm.zona ? th.accent : th.textMuted, cursor: "pointer", fontSize: 11 }}>Sin zona</button>
-              {zones.map(z => (
-                <button key={z.id} onClick={() => setCForm(f => ({ ...f, zona: z.id }))} style={{ padding: "5px 12px", borderRadius: 20, border: `1px solid ${cForm.zona === z.id ? z.color : th.border}`, background: cForm.zona === z.id ? `${z.color}20` : "transparent", color: cForm.zona === z.id ? z.color : th.textMuted, cursor: "pointer", fontSize: 11, fontWeight: cForm.zona === z.id ? 700 : 400 }}>
-                  {z.icon} {z.name}
-                </button>
-              ))}
-            </div>
-            <Label th={th}>Estado</Label>
-            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-              {ESTADOS_CLIENTE.map(e => (
-                <button key={e.id} onClick={() => setCForm(f => ({ ...f, estado: e.id }))} style={{ flex: 1, padding: "7px", borderRadius: 9, border: `2px solid ${cForm.estado === e.id ? e.color : th.border}`, background: cForm.estado === e.id ? `${e.color}18` : "transparent", color: cForm.estado === e.id ? e.color : th.textMuted, cursor: "pointer", fontSize: 12, fontWeight: cForm.estado === e.id ? 700 : 400 }}>{e.label}</button>
-              ))}
-            </div>
-            <Label th={th}>Frecuencia de visita</Label>
-            <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-              {[["ninguna", "Sin frecuencia"], ["semanal", "Días fijos"], ["dias", "Cada X días"]].map(([k, l]) => (
-                <button key={k} onClick={() => setCForm(f => ({ ...f, frecuenciaTipo: k }))} style={{ flex: 1, padding: "7px 4px", borderRadius: 9, border: `2px solid ${cForm.frecuenciaTipo === k ? th.accent : th.border}`, background: cForm.frecuenciaTipo === k ? `${th.accent}18` : "transparent", color: cForm.frecuenciaTipo === k ? th.accent : th.textMuted, cursor: "pointer", fontSize: 11, fontWeight: cForm.frecuenciaTipo === k ? 700 : 400 }}>{l}</button>
-              ))}
-            </div>
-            {cForm.frecuenciaTipo === "semanal" && (
-              <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-                {DIAS_SEMANA.map((d, i) => {
-                  const sel = clampArr(cForm.diasSemana).includes(i);
-                  return (
-                    <button key={i} onClick={() => setCForm(f => ({ ...f, diasSemana: sel ? clampArr(f.diasSemana).filter(x => x !== i) : [...clampArr(f.diasSemana), i] }))}
-                      style={{ padding: "6px 10px", borderRadius: 9, border: `2px solid ${sel ? th.accent : th.border}`, background: sel ? `${th.accent}20` : "transparent", color: sel ? th.accent : th.textMuted, cursor: "pointer", fontSize: 12, fontWeight: sel ? 700 : 400 }}>
-                      {d}
+          {/* Modal agregar/editar cliente — liquid glass */}
+          {(showAddCliModal || editingCli) && (
+            <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 450, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: "0 0 20px" }}
+              onClick={e => { if (e.target === e.currentTarget) { setShowAddCliModal(false); setEditingCli(null); setCForm(EMPTY_CLI_FORM); } }}>
+              <div style={{ width: "100%", maxWidth: 500, maxHeight: "88vh", overflowY: "auto", background: "rgba(8,18,38,0.82)", backdropFilter: "blur(32px) saturate(1.8)", WebkitBackdropFilter: "blur(32px) saturate(1.8)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: "28px 28px 20px 20px", padding: "20px 18px 32px", boxShadow: "0 -8px 48px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.12)" }}>
+                <div style={{ width: 36, height: 4, borderRadius: 99, background: "rgba(255,255,255,0.2)", margin: "0 auto 16px" }} />
+                <SectionTitle th={th}>{editingCli ? "✏️ Editar cliente" : "👤 Nuevo cliente"}</SectionTitle>
+                <input type="text" placeholder="Nombre *" value={cForm.nombre} onChange={e => setCForm(f => ({ ...f, nombre: e.target.value }))} style={{ ...inputStyle(th), marginBottom: 8 }} />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                  <div><Label th={th}>Teléfono</Label><input type="text" value={cForm.tel} onChange={e => setCForm(f => ({ ...f, tel: e.target.value }))} style={inputStyle(th)} /></div>
+                  <div><Label th={th}>Dirección</Label><input type="text" value={cForm.direccion} onChange={e => setCForm(f => ({ ...f, direccion: e.target.value }))} style={inputStyle(th)} /></div>
+                </div>
+                <Label th={th}>Zona</Label>
+                <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+                  <button onClick={() => setCForm(f => ({ ...f, zona: "" }))} style={{ padding: "5px 12px", borderRadius: 20, border: `1px solid ${!cForm.zona ? th.accent : th.border}`, background: !cForm.zona ? `${th.accent}20` : "transparent", color: !cForm.zona ? th.accent : th.textMuted, cursor: "pointer", fontSize: 11 }}>Sin zona</button>
+                  {zones.map(z => (
+                    <button key={z.id} onClick={() => setCForm(f => ({ ...f, zona: z.id }))} style={{ padding: "5px 12px", borderRadius: 20, border: `1px solid ${cForm.zona === z.id ? z.color : th.border}`, background: cForm.zona === z.id ? `${z.color}20` : "transparent", color: cForm.zona === z.id ? z.color : th.textMuted, cursor: "pointer", fontSize: 11, fontWeight: cForm.zona === z.id ? 700 : 400 }}>
+                      {z.icon} {z.name}
                     </button>
-                  );
-                })}
-              </div>
-            )}
-            {cForm.frecuenciaTipo === "dias" && (
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                <span style={{ fontSize: 12, color: th.textMuted }}>Cada</span>
-                <input type="number" min="1" max="60" value={cForm.frecuenciaDias} onChange={e => setCForm(f => ({ ...f, frecuenciaDias: parseInt(e.target.value) || 7 }))} style={{ ...inputStyle(th), width: 70, textAlign: "center" }} />
-                <span style={{ fontSize: 12, color: th.textMuted }}>días</span>
-              </div>
-            )}
-            {cForm.frecuenciaTipo !== "ninguna" && <>
-              <Label th={th}>Bidones estimados por visita</Label>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
-                {[["u20Estimado", "20L"], ["u12Estimado", "12L"]].map(([field, label]) => (
-                  <div key={field} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 12, color: th.textMuted, minWidth: 30 }}>{label}:</span>
-                    <button onClick={() => setCForm(f => ({ ...f, [field]: Math.max(0, (f[field] || 0) - 1) }))} style={{ ...btnGhost(th), padding: "4px 10px" }}>−</button>
-                    <span style={{ fontWeight: 700, color: th.accent, minWidth: 20, textAlign: "center" }}>{cForm[field] || 0}</span>
-                    <button onClick={() => setCForm(f => ({ ...f, [field]: (f[field] || 0) + 1 }))} style={{ ...btnGhost(th), padding: "4px 10px" }}>+</button>
+                  ))}
+                </div>
+                <Label th={th}>Estado</Label>
+                <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                  {ESTADOS_CLIENTE.map(e => (
+                    <button key={e.id} onClick={() => setCForm(f => ({ ...f, estado: e.id }))} style={{ flex: 1, padding: "7px", borderRadius: 9, border: `2px solid ${cForm.estado === e.id ? e.color : th.border}`, background: cForm.estado === e.id ? `${e.color}18` : "transparent", color: cForm.estado === e.id ? e.color : th.textMuted, cursor: "pointer", fontSize: 12, fontWeight: cForm.estado === e.id ? 700 : 400 }}>{e.label}</button>
+                  ))}
+                </div>
+                <Label th={th}>Frecuencia de visita</Label>
+                <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                  {[["ninguna", "Sin frecuencia"], ["semanal", "Días fijos"], ["dias", "Cada X días"]].map(([k, l]) => (
+                    <button key={k} onClick={() => setCForm(f => ({ ...f, frecuenciaTipo: k }))} style={{ flex: 1, padding: "7px 4px", borderRadius: 9, border: `2px solid ${cForm.frecuenciaTipo === k ? th.accent : th.border}`, background: cForm.frecuenciaTipo === k ? `${th.accent}18` : "transparent", color: cForm.frecuenciaTipo === k ? th.accent : th.textMuted, cursor: "pointer", fontSize: 11, fontWeight: cForm.frecuenciaTipo === k ? 700 : 400 }}>{l}</button>
+                  ))}
+                </div>
+                {cForm.frecuenciaTipo === "semanal" && (
+                  <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+                    {DIAS_SEMANA.map((d, i) => {
+                      const sel = clampArr(cForm.diasSemana).includes(i);
+                      return (
+                        <button key={i} onClick={() => setCForm(f => ({ ...f, diasSemana: sel ? clampArr(f.diasSemana).filter(x => x !== i) : [...clampArr(f.diasSemana), i] }))}
+                          style={{ padding: "6px 10px", borderRadius: 9, border: `2px solid ${sel ? th.accent : th.border}`, background: sel ? `${th.accent}20` : "transparent", color: sel ? th.accent : th.textMuted, cursor: "pointer", fontSize: 12, fontWeight: sel ? 700 : 400 }}>
+                          {d}
+                        </button>
+                      );
+                    })}
                   </div>
-                ))}
+                )}
+                {cForm.frecuenciaTipo === "dias" && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                    <span style={{ fontSize: 12, color: th.textMuted }}>Cada</span>
+                    <input type="number" min="1" max="60" value={cForm.frecuenciaDias} onChange={e => setCForm(f => ({ ...f, frecuenciaDias: parseInt(e.target.value) || 7 }))} style={{ ...inputStyle(th), width: 70, textAlign: "center" }} />
+                    <span style={{ fontSize: 12, color: th.textMuted }}>días</span>
+                  </div>
+                )}
+                {cForm.frecuenciaTipo !== "ninguna" && <>
+                  <Label th={th}>Bidones estimados por visita</Label>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+                    {[["u20Estimado", "20L"], ["u12Estimado", "12L"]].map(([field, label]) => (
+                      <div key={field} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 12, color: th.textMuted, minWidth: 30 }}>{label}:</span>
+                        <button onClick={() => setCForm(f => ({ ...f, [field]: Math.max(0, (f[field] || 0) - 1) }))} style={{ ...btnGhost(th), padding: "4px 10px" }}>−</button>
+                        <span style={{ fontWeight: 700, color: th.accent, minWidth: 20, textAlign: "center" }}>{cForm[field] || 0}</span>
+                        <button onClick={() => setCForm(f => ({ ...f, [field]: (f[field] || 0) + 1 }))} style={{ ...btnGhost(th), padding: "4px 10px" }}>+</button>
+                      </div>
+                    ))}
+                  </div>
+                </>}
+                <Label th={th}>Nota</Label>
+                <input type="text" value={cForm.nota} onChange={e => setCForm(f => ({ ...f, nota: e.target.value }))} style={{ ...inputStyle(th), marginBottom: 16 }} />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => { setEditingCli(null); setShowAddCliModal(false); setCForm(EMPTY_CLI_FORM); }} style={btnGhost(th)}>Cancelar</button>
+                  <button onClick={() => { saveCliente(); setShowAddCliModal(false); }} style={{ ...btnPrimary, flex: 1, background: "linear-gradient(135deg,#8B5CF6,#7C3AED)", boxShadow: "0 6px 20px rgba(139,92,246,0.3)" }}>
+                    {editingCli ? "✅ Guardar cambios" : "👤 Agregar cliente"}
+                  </button>
+                </div>
               </div>
-            </>}
-            <Label th={th}>Nota</Label>
-            <input type="text" value={cForm.nota} onChange={e => setCForm(f => ({ ...f, nota: e.target.value }))} style={{ ...inputStyle(th), marginBottom: 12 }} />
-            <div style={{ display: "flex", gap: 8 }}>
-              {editingCli && <button onClick={() => { setEditingCli(null); setCForm(EMPTY_CLI_FORM); }} style={btnGhost(th)}>Cancelar</button>}
-              <button onClick={saveCliente} style={{ ...btnPrimary, background: "linear-gradient(135deg,#8B5CF6,#7C3AED)", boxShadow: "0 6px 20px rgba(139,92,246,0.3)" }}>
-                {editingCli ? "✅ Guardar" : "👤 Agregar"}
-              </button>
             </div>
-          </GCard>
+          )}
+
+          {/* Botón (+) flotante liquid glass */}
+          {mainTab === "clientes" && !showAddCliModal && !editingCli && (
+            <button onClick={() => { setCForm(EMPTY_CLI_FORM); setShowAddCliModal(true); }}
+              style={{ position: "fixed", bottom: 90, right: 20, width: 56, height: 56, borderRadius: "50%", background: "rgba(139,92,246,0.25)", backdropFilter: "blur(20px) saturate(1.8)", WebkitBackdropFilter: "blur(20px) saturate(1.8)", border: "1px solid rgba(139,92,246,0.45)", boxShadow: "0 8px 32px rgba(139,92,246,0.4), inset 0 1px 0 rgba(255,255,255,0.2)", color: "#c4b5fd", fontSize: 28, fontWeight: 300, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 199, transition: "transform 0.15s" }}
+              onMouseDown={e => e.currentTarget.style.transform = "scale(0.92)"}
+              onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+              onTouchStart={e => e.currentTarget.style.transform = "scale(0.92)"}
+              onTouchEnd={e => e.currentTarget.style.transform = "scale(1)"}>
+              +
+            </button>
+          )}
+
+
 
           {clientesFiltrados.length === 0 && <Empty icon="👥" text="Sin clientes" th={th} />}
           {clientesFiltrados.map(c => {
@@ -2404,7 +2426,7 @@ export default function App() {
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     <button onClick={() => setSelectedCliente(c)} style={{ ...btnGhost(th), padding: "4px 9px", fontSize: 12 }}>📊</button>
-                    <button onClick={() => { setEditingCli(c.id); setCForm({ nombre: c.nombre, tel: c.tel || "", direccion: c.direccion || "", nota: c.nota || "", estado: c.estado || "activo", zona: c.zona || "", frecuenciaTipo: c.frecuenciaTipo || "ninguna", frecuenciaDias: c.frecuenciaDias || 7, diasSemana: clampArr(c.diasSemana), u20Estimado: c.u20Estimado || 0, u12Estimado: c.u12Estimado || 0 }); window.scrollTo(0, 0); }} style={{ ...btnGhost(th), padding: "4px 9px", fontSize: 12 }}>✏️</button>
+                    <button onClick={() => { setEditingCli(c.id); setCForm({ nombre: c.nombre, tel: c.tel || "", direccion: c.direccion || "", nota: c.nota || "", estado: c.estado || "activo", zona: c.zona || "", frecuenciaTipo: c.frecuenciaTipo || "ninguna", frecuenciaDias: c.frecuenciaDias || 7, diasSemana: clampArr(c.diasSemana), u20Estimado: c.u20Estimado || 0, u12Estimado: c.u12Estimado || 0 }); setShowAddCliModal(true); }} style={{ ...btnGhost(th), padding: "4px 9px", fontSize: 12 }}>✏️</button>
                     <button onClick={() => deleteCliente(c.id)} style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)", borderRadius: 8, color: "#ef4444", cursor: "pointer", padding: "4px 9px", fontSize: 13 }}>🗑️</button>
                   </div>
                 </div>
@@ -2611,17 +2633,19 @@ export default function App() {
       </div>
 
       {/* BOTTOM NAV */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: th.navBg, borderTop: `1px solid ${th.border}`, display: "flex", alignItems: "center", zIndex: 200, backdropFilter: "blur(16px)" }}>
-        <button onClick={() => setMainTab("ruteo")} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 0", flex: 1, border: "none", background: "none", cursor: "pointer", color: mainTab === "ruteo" ? th.accent : th.textMuted, borderTop: mainTab === "ruteo" ? `2px solid ${th.accent}` : "2px solid transparent" }}>
-          <span style={{ fontSize: 20, marginBottom: 2 }}>🗺</span>
-          <span style={{ fontSize: 10, fontWeight: mainTab === "ruteo" ? 700 : 400 }}>Ruteo</span>
-        </button>
-        {NAV_TABS.map(t => (
-          <button key={t.id} onClick={() => { setMainTab(t.id); if (t.id === "ventas") setSubTab("caja"); if (t.id === "finanzas") setSubTab("dashboard"); }} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 0", flex: 1, border: "none", background: "none", cursor: "pointer", color: mainTab === t.id ? th.accent : th.textMuted, borderTop: mainTab === t.id ? `2px solid ${th.accent}` : "2px solid transparent" }}>
-            <span style={{ fontSize: 20, marginBottom: 2 }}>{t.icon}</span>
-            <span style={{ fontSize: 10, fontWeight: mainTab === t.id ? 700 : 400 }}>{t.label}</span>
-          </button>
-        ))}
+      {/* NAV FLOTANTE — liquid glass iOS 26 */}
+      <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 200, display: "flex", alignItems: "center", gap: 2, padding: "8px 12px", borderRadius: 40, background: "rgba(10,20,40,0.55)", backdropFilter: "blur(28px) saturate(1.8)", WebkitBackdropFilter: "blur(28px) saturate(1.8)", border: "1px solid rgba(255,255,255,0.13)", boxShadow: "0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.12)", whiteSpace: "nowrap" }}>
+        {NAV_TABS.map(t => {
+          const active = mainTab === t.id;
+          return (
+            <button key={t.id}
+              onClick={() => { setMainTab(t.id); if (t.id === "ventas") setSubTab("caja"); if (t.id === "finanzas") setSubTab("dashboard"); }}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, padding: active ? "7px 16px" : "7px 12px", borderRadius: 32, border: "none", cursor: "pointer", transition: "all 0.2s cubic-bezier(.34,1.56,.64,1)", background: active ? "rgba(56,189,248,0.22)" : "transparent", boxShadow: active ? "inset 0 1px 0 rgba(255,255,255,0.18), 0 2px 8px rgba(56,189,248,0.18)" : "none", color: active ? th.accent : "rgba(255,255,255,0.45)", minWidth: active ? 58 : 44 }}>
+              <span style={{ fontSize: active ? 20 : 18, lineHeight: 1, filter: active ? "drop-shadow(0 0 6px rgba(56,189,248,0.6))" : "none", transition: "all 0.2s" }}>{t.icon}</span>
+              {active && <span style={{ fontSize: 9, fontWeight: 700, color: th.accent, letterSpacing: 0.3 }}>{t.label}</span>}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
