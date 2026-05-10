@@ -1090,6 +1090,54 @@ function CalendarioView({ history, prices, fiados, goalArs, th, onEditDay }) {
 }
 
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CALENDARIO MINI WIDGET (para tab Hoy)
+// ─────────────────────────────────────────────────────────────────────────────
+function CalendarioMiniWidget({ history, prices, th, onDayClick }) {
+  const viewMonth = currentMonth();
+  const { cells, maxCobrado } = useMemo(() => {
+    const [y, m] = viewMonth.split("-").map(Number);
+    const firstDow    = new Date(y, m - 1, 1).getDay();
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < firstDow; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) {
+      const iso = `${viewMonth}-${String(d).padStart(2, "0")}`;
+      const day = history.find(h => h.date === iso) || null;
+      const t   = day ? dayTotals(day, prices) : null;
+      cells.push({ iso, day, t });
+    }
+    const maxCobrado = Math.max(...cells.filter(Boolean).map(c => c.t?.cobrado || 0), 1);
+    return { cells, maxCobrado };
+  }, [viewMonth, history, prices]);
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 3 }}>
+        {DIAS_SEMANA.map(d => <div key={d} style={{ textAlign: "center", fontSize: 9, color: th.textMuted, fontWeight: 600 }}>{d}</div>)}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
+        {cells.map((cell, i) => {
+          if (!cell) return <div key={`e${i}`} />;
+          const isHoy    = cell.iso === todayKey();
+          const hasSales = cell.t && cell.t.cobrado > 0;
+          const pct      = hasSales ? cell.t.cobrado / maxCobrado : 0;
+          const isFuture = cell.iso > todayKey();
+          return (
+            <div key={cell.iso}
+              onClick={() => !isFuture && onDayClick && onDayClick(cell.iso)}
+              style={{ aspectRatio: "1", background: isHoy ? `${th.accent}30` : hasSales ? `rgba(56,189,248,${0.08 + pct * 0.55})` : "rgba(255,255,255,0.02)", borderRadius: 6, border: `1.5px solid ${isHoy ? th.accent : hasSales ? "rgba(56,189,248,0.2)" : th.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: isFuture ? "default" : "pointer", position: "relative" }}>
+              <span style={{ fontSize: 9, fontWeight: isHoy ? 800 : 400, color: isHoy ? th.accent : isFuture ? th.textDim : th.text }}>{new Date(cell.iso + "T12:00:00").getDate()}</span>
+              {cell.day?.cierreCaja && <span style={{ position: "absolute", top: 0, right: 1, fontSize: 6 }}>🔒</span>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CLIENTE CHART VIEW
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1816,6 +1864,7 @@ export default function App() {
   }, [clientes, history, prices]);
 
   const NAV_TABS = [
+    { id: "ruteo",    label: "Hoy",      icon: "🏠" },
     { id: "ventas",   label: "Ventas",   icon: "💰" },
     { id: "clientes", label: "Clientes", icon: "👥" },
     { id: "finanzas", label: "Finanzas", icon: "📊" },
@@ -1914,10 +1963,94 @@ export default function App() {
       {/* CONTENT */}
       <div style={{ padding: "16px 14px", maxWidth: 680, margin: "0 auto" }}>
 
-        {/* ═══════════════════════ RUTEO ═══════════════════════ */}
+        {/* ═══════════════════════ HOY (ex-RUTEO) ═══════════════════════ */}
         {mainTab === "ruteo" && <>
+
+          {/* ── WIDGETS FILA 1: KPIs del día ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+            <div onClick={() => { setMainTab("ventas"); setSubTab("caja"); }}
+              style={{ background: `linear-gradient(135deg,${th.accent}22,${th.accent}08)`, border: `1px solid ${th.accent}35`, borderRadius: 16, padding: "14px 16px", cursor: "pointer", position: "relative", overflow: "hidden" }}>
+              <div style={{ fontSize: 10, color: th.textMuted, textTransform: "uppercase", fontWeight: 600, marginBottom: 4 }}>Cobrado hoy</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: th.accent }}>{fmt(todayT.cobrado)}</div>
+              <div style={{ fontSize: 10, color: th.textMuted, marginTop: 2 }}>{todayT.u20 + todayT.u12} bidones · {today.ventas?.length || 0} ventas</div>
+              <PBar pct={goalProgress} a={th.accent} b="#38bdf8" style={{ marginTop: 8 }} />
+              <div style={{ fontSize: 9, color: th.textMuted, marginTop: 3 }}>Meta: {fmt(goalArs)} · {Math.round(goalProgress)}%</div>
+              {today.cierreCaja && <div style={{ position: "absolute", top: 8, right: 10, fontSize: 14 }}>🔒</div>}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div onClick={() => { setMainTab("ventas"); setSubTab("fiados"); }}
+                style={{ flex: 1, background: fiadosPendTotal > 0 ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.04)", border: `1px solid ${fiadosPendTotal > 0 ? "rgba(245,158,11,0.3)" : th.border}`, borderRadius: 13, padding: "10px 14px", cursor: "pointer" }}>
+                <div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase", fontWeight: 600 }}>Fiados pend.</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: fiadosPendTotal > 0 ? "#F59E0B" : th.textDim }}>{fiadosPendTotal > 0 ? fmt(fiadosPendTotal) : "—"}</div>
+              </div>
+              <div onClick={() => { setMainTab("finanzas"); setSubTab("dashboard"); }}
+                style={{ flex: 1, background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)", borderRadius: 13, padding: "10px 14px", cursor: "pointer" }}>
+                <div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase", fontWeight: 600 }}>Semana</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#8B5CF6" }}>{fmt(cierreSemana.cobrado)}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── WIDGETS FILA 2: Efectivo / Transfer / Gastos ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+            <div style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 13, padding: "10px 12px" }}>
+              <div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase", fontWeight: 600 }}>Efectivo</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#10B981" }}>{fmt(todayT.efectivo)}</div>
+            </div>
+            <div style={{ background: `${th.accent}0d`, border: `1px solid ${th.accent}25`, borderRadius: 13, padding: "10px 12px" }}>
+              <div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase", fontWeight: 600 }}>Transfer.</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: th.accent }}>{fmt(todayT.transferencia)}</div>
+            </div>
+            <div onClick={() => { setMainTab("finanzas"); setSubTab("gastos"); }}
+              style={{ background: todayT.gastos > 0 ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.04)", border: `1px solid ${todayT.gastos > 0 ? "rgba(239,68,68,0.25)" : th.border}`, borderRadius: 13, padding: "10px 12px", cursor: "pointer" }}>
+              <div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase", fontWeight: 600 }}>Gastos</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: todayT.gastos > 0 ? "#ef4444" : th.textDim }}>{todayT.gastos > 0 ? fmt(todayT.gastos) : "—"}</div>
+            </div>
+          </div>
+
+          {/* ── WIDGET: Alerta de gastos ── */}
+          {gastoAlert && <div onClick={() => { setMainTab("finanzas"); setSubTab("gastos"); }} style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 12, padding: "10px 14px", marginBottom: 12, fontSize: 13, color: "#fca5a5", cursor: "pointer" }}>⚠️ Gastos ({Math.round((todayT.gastos / todayT.cobrado) * 100)}%) superan el {alertPct}% — tocá para ver</div>}
+
+          {/* ── WIDGET: Bidones sin devolver ── */}
+          {totalSinDevolver > 0 && (
+            <div onClick={() => setShowBidones(true)} style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 13, padding: "10px 14px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+              <div style={{ fontSize: 13, color: "#fca5a5", fontWeight: 600 }}>🪣 {totalSinDevolver} bidón{totalSinDevolver !== 1 ? "es" : ""} sin devolver</div>
+              <div style={{ fontSize: 11, color: "#ef4444" }}>Ver →</div>
+            </div>
+          )}
+
+          {/* ── CALENDARIO WIDGET ── */}
+          <GCard th={th} style={{ marginBottom: 12, padding: "14px 12px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: th.text }}>📅 Este mes</div>
+              <button onClick={() => { setMainTab("finanzas"); setSubTab("calendario"); }} style={{ fontSize: 11, color: th.accent, background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>Ver completo →</button>
+            </div>
+            <CalendarioMiniWidget history={history} prices={prices} th={th} onDayClick={date => { setSelectedDate(date); setMainTab("ventas"); setSubTab("caja"); }} />
+          </GCard>
+
+          {/* ── WIDGET: Top clientes del mes ── */}
+          {clienteRanking.length > 0 && (
+            <GCard th={th} style={{ marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: th.text }}>🏆 Top clientes del mes</div>
+                <button onClick={() => { setMainTab("clientes"); }} style={{ fontSize: 11, color: th.accent, background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>Ver todos →</button>
+              </div>
+              {clienteRanking.slice(0,3).map((c, i) => (
+                <div key={c.id} onClick={() => setSelectedCliente(c)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", marginBottom: 5, background: "rgba(255,255,255,0.03)", borderRadius: 10, cursor: "pointer" }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 7, background: i === 0 ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: i === 0 ? "#F59E0B" : th.textMuted }}>{i + 1}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: th.text }}>{c.nombre}</div>
+                    <ZoneBadge zoneId={c.zona} zones={zones} />
+                  </div>
+                  <div style={{ fontWeight: 700, color: th.accent, fontSize: 13 }}>{fmt(c.totalMes)}</div>
+                </div>
+              ))}
+            </GCard>
+          )}
+
+          {/* ── VISITAS PROGRAMADAS ── */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: th.text }}>📅 Visitas programadas hoy</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: th.text }}>📋 Visitas de hoy</div>
             <div style={{ fontSize: 11, color: th.textMuted }}>{visitasProgramadas.length} cliente{visitasProgramadas.length !== 1 ? "s" : ""}</div>
           </div>
 
@@ -1951,21 +2084,23 @@ export default function App() {
                   </div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: mapsUrl ? (yaEntregado ? "1fr" : "auto 1fr 1fr 1fr") : (yaEntregado ? "1fr" : "1fr 1fr 1fr"), gap: 8 }}>
-                    {mapsUrl && <a href={mapsUrl} target="_blank" rel="noreferrer" style={{ padding: "9px 4px", background: `${th.accent}14`, border: `1px solid ${th.accent}30`, borderRadius: 10, color: th.accent, textDecoration: "none", fontWeight: 600, fontSize: 12, textAlign: "center", display: "block" }}>📍 Maps</a>}
-                    {!yaEntregado && <button onClick={() => setEntregarModal({ ...cli, clienteId: cli.id, u20: cli.u20Estimado || 0, u12: cli.u12Estimado || 0, esProgramado: true })} style={{ padding: "9px 4px", background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: 10, color: "#10B981", cursor: "pointer", fontWeight: 700, fontSize: 12 }}>✅ Entregar</button>}
-                    {!yaEntregado && <button onClick={() => setNuevoPedidoModal({ id: `prog-${cli.id}`, clienteId: cli.id, nombre: cli.nombre, direccion: cli.direccion || "", u20: cli.u20Estimado || 0, u12: cli.u12Estimado || 0, nota: "", esProgramado: true })} style={{ padding: "9px 4px", background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)", borderRadius: 10, color: "#8B5CF6", cursor: "pointer", fontWeight: 600, fontSize: 12 }}>✏️ Ajustar</button>}
-                    <button onClick={() => { const nc = clientes.map(x => x.id !== cli.id ? x : { ...x, frecuenciaTipo: "ninguna", diasSemana: [], frecuenciaDias: 7 }); setClientes(nc); sset("clientes_v1", nc); showToast("🗑️ Visita eliminada"); }} style={{ padding: "9px 4px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10, color: "#ef4444", cursor: "pointer", fontWeight: 600, fontSize: 12 }}>🗑️ Quitar</button>
-                  </div>
+                  {mapsUrl && <a href={mapsUrl} target="_blank" rel="noreferrer" style={{ padding: "9px 4px", background: `${th.accent}14`, border: `1px solid ${th.accent}30`, borderRadius: 10, color: th.accent, textDecoration: "none", fontWeight: 600, fontSize: 12, textAlign: "center", display: "block" }}>📍 Maps</a>}
+                  {!yaEntregado && <button onClick={() => setEntregarModal({ ...cli, clienteId: cli.id, u20: cli.u20Estimado || 0, u12: cli.u12Estimado || 0, esProgramado: true })} style={{ padding: "9px 4px", background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: 10, color: "#10B981", cursor: "pointer", fontWeight: 700, fontSize: 12 }}>✅ Entregar</button>}
+                  {!yaEntregado && <button onClick={() => setNuevoPedidoModal({ id: `prog-${cli.id}`, clienteId: cli.id, nombre: cli.nombre, direccion: cli.direccion || "", u20: cli.u20Estimado || 0, u12: cli.u12Estimado || 0, nota: "", esProgramado: true })} style={{ padding: "9px 4px", background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)", borderRadius: 10, color: "#8B5CF6", cursor: "pointer", fontWeight: 600, fontSize: 12 }}>✏️ Ajustar</button>}
+                  <button onClick={() => { const nc = clientes.map(x => x.id !== cli.id ? x : { ...x, frecuenciaTipo: "ninguna", diasSemana: [], frecuenciaDias: 7 }); setClientes(nc); sset("clientes_v1", nc); showToast("🗑️ Visita eliminada"); }} style={{ padding: "9px 4px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10, color: "#ef4444", cursor: "pointer", fontWeight: 600, fontSize: 12 }}>🗑️ Quitar</button>
+                </div>
               </GCard>
             );
           })}
 
+          {/* ── PEDIDOS DEL DÍA ── */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, marginBottom: 10 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: th.text }}>📲 Pedidos del día</div>
             <button onClick={() => setNuevoPedidoModal("new")} style={{ padding: "7px 13px", background: `${th.accent}20`, border: `1px solid ${th.accent}35`, borderRadius: 10, color: th.accent, fontWeight: 700, cursor: "pointer", fontSize: 12 }}>+ Pedido</button>
           </div>
 
-          {pedidos.length === 0 && <GCard th={th} style={{ textAlign: "center", padding: "18px" }}><div style={{ fontSize: 11, color: th.textMuted }}>Sin pedidos puntuales</div></GCard>}
+
+                    {pedidos.length === 0 && <GCard th={th} style={{ textAlign: "center", padding: "18px" }}><div style={{ fontSize: 11, color: th.textMuted }}>Sin pedidos puntuales</div></GCard>}
 
           {pedidos.map((p, i) => {
             const cli = clientes.find(c => c.id === p.clienteId);
