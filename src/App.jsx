@@ -2573,7 +2573,7 @@ export default function App() {
                             <div style={{ fontWeight: 700, color: "#ef4444", fontSize: 14 }}>−{fmt(totalDia)}</div>
                           </div>
                           {gastosDelDia.map((g, i) => (
-                            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", marginBottom: 4, background: , borderRadius: 8, borderLeft:  }}>
+                            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", marginBottom: 4, background: (GCOLOR[g.tipo]||"#64748b") + "10", borderRadius: 8, borderLeft: "3px solid " + (GCOLOR[g.tipo]||"#64748b") }}>
                               <span style={{ fontSize: 12, color: th.text }}>{GICON[g.tipo]||"💸"} {g.desc || "Sin descripción"}</span>
                               <span style={{ fontWeight: 700, color: GCOLOR[g.tipo]||"#ef4444", fontSize: 13 }}>−{fmt(parseFloat(g.monto))}</span>
                             </div>
