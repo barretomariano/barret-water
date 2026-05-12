@@ -390,19 +390,19 @@ function sendNotif(title, body, icon = "/icon-192.png") {
 // THEME
 // ─────────────────────────────────────────────────────────────────────────────
 const DARK = {
-  bg: "#060d1a", bgCard: "linear-gradient(160deg,rgba(255,255,255,0.07) 0%,rgba(255,255,255,0.02) 100%)",
-  border: "rgba(255,255,255,0.08)", borderTop: "rgba(255,255,255,0.18)",
-  text: "#f1f5f9", textMuted: "#7c8fa8", textDim: "#2d3f55",
-  input: "rgba(255,255,255,0.05)", inputBorder: "rgba(255,255,255,0.12)",
+  bg: "#060d1a", bgCard: "linear-gradient(160deg,rgba(255,255,255,0.11) 0%,rgba(255,255,255,0.05) 100%)",
+  border: "rgba(255,255,255,0.12)", borderTop: "rgba(255,255,255,0.22)",
+  text: "#f1f5f9", textMuted: "#94a3b8", textDim: "#334155",
+  input: "rgba(255,255,255,0.08)", inputBorder: "rgba(255,255,255,0.16)",
   navBg: "rgba(6,13,26,0.97)", accent: "#38bdf8", accentAlt: "#818cf8",
   success: "#34d399", warning: "#fbbf24", danger: "#f87171",
 };
 const LIGHT = {
-  bg: "#f8fafc", bgCard: "linear-gradient(160deg,rgba(255,255,255,0.95) 0%,rgba(241,245,249,0.85) 100%)",
-  border: "rgba(0,0,0,0.07)", borderTop: "rgba(255,255,255,0.95)",
-  text: "#0f172a", textMuted: "#64748b", textDim: "#cbd5e1",
-  input: "rgba(0,0,0,0.04)", inputBorder: "rgba(0,0,0,0.09)",
-  navBg: "rgba(248,250,252,0.97)", accent: "#0284C7", accentAlt: "#6366f1",
+  bg: "#e8edf5", bgCard: "linear-gradient(160deg,rgba(255,255,255,0.82) 0%,rgba(226,232,240,0.75) 100%)",
+  border: "rgba(0,0,0,0.10)", borderTop: "rgba(255,255,255,0.90)",
+  text: "#0f172a", textMuted: "#475569", textDim: "#94a3b8",
+  input: "rgba(0,0,0,0.06)", inputBorder: "rgba(0,0,0,0.12)",
+  navBg: "rgba(232,237,245,0.97)", accent: "#0284C7", accentAlt: "#6366f1",
   success: "#10B981", warning: "#F59E0B", danger: "#ef4444",
 };
 
@@ -411,7 +411,10 @@ const LIGHT = {
 // ─────────────────────────────────────────────────────────────────────────────
 const glassCard = (th) => ({
   background: th.bgCard, border: `1px solid ${th.border}`, borderTop: `1px solid ${th.borderTop}`,
-  borderRadius: 20, boxShadow: "0 2px 16px rgba(0,0,0,0.15),inset 0 1px 0 rgba(255,255,255,0.1)",
+  borderRadius: 20,
+  backdropFilter: "blur(20px) saturate(1.6)",
+  WebkitBackdropFilter: "blur(20px) saturate(1.6)",
+  boxShadow: "0 4px 24px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.14)",
   padding: "14px 16px", marginBottom: 12,
 });
 const inputStyle = (th) => ({
@@ -746,7 +749,9 @@ function SaleModal({ clientes, prices, onSave, onClose, onAddCliente, editVenta,
 // COBRAR MODAL
 // ─────────────────────────────────────────────────────────────────────────────
 function CobrarModal({ fiado, onCobrar, onClose, th }) {
-  const [fecha, setFecha] = useState(todayKey());
+  const [fecha, setFecha]   = useState(todayKey());
+  const [tipoPago, setTipo] = useState("efectivo");
+  const TIPOS = [{ id: "efectivo", label: "💵 Efectivo", color: "#10B981" }, { id: "transferencia", label: "📲 Transfer.", color: "#38bdf8" }];
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{ ...glassCard(th), maxWidth: 380, width: "100%", padding: 24 }}>
@@ -755,14 +760,23 @@ function CobrarModal({ fiado, onCobrar, onClose, th }) {
           <button onClick={onClose} style={{ ...btnGhost(th), padding: "3px 10px" }}>✕</button>
         </div>
         <div style={{ fontSize: 13, color: th.textMuted, marginBottom: 16 }}>{fiado.nombre} · <span style={{ color: "#F59E0B", fontWeight: 600 }}>{fmt(fiado.monto)}</span></div>
+        <Label th={th}>Tipo de pago</Label>
+        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+          {TIPOS.map(t => (
+            <button key={t.id} onClick={() => setTipo(t.id)}
+              style={{ flex: 1, padding: "10px 8px", borderRadius: 12, border: `2px solid ${tipoPago === t.id ? t.color : th.border}`, background: tipoPago === t.id ? t.color + "20" : "transparent", color: tipoPago === t.id ? t.color : th.textMuted, fontWeight: tipoPago === t.id ? 700 : 400, cursor: "pointer", fontSize: 13, transition: "all 0.15s" }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
         <Label th={th}>Fecha de cobro</Label>
         <input type="date" value={fecha} max={todayKey()} onChange={e => setFecha(e.target.value)} style={{ ...inputStyle(th), marginBottom: 12 }} />
         <div style={{ fontSize: 12, color: th.textMuted, marginBottom: 16, padding: "10px 12px", background: "rgba(16,185,129,0.08)", borderRadius: 10 }}>
-          Se sumará al reporte del {labelDate(fecha)}.
+          Se registrará como <strong style={{ color: TIPOS.find(t=>t.id===tipoPago)?.color }}>{tipoPago}</strong> en el reporte del {labelDate(fecha)}.
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onClose} style={{ ...btnGhost(th), flex: 1, textAlign: "center" }}>Cancelar</button>
-          <button onClick={() => onCobrar(fiado, fecha)} style={{ flex: 2, padding: "12px", background: "linear-gradient(135deg,#10B981,#059669)", border: "none", borderRadius: 12, color: "white", fontWeight: 700, cursor: "pointer" }}>✅ Confirmar</button>
+          <button onClick={() => onCobrar(fiado, fecha, tipoPago)} style={{ flex: 2, padding: "12px", background: "linear-gradient(135deg,#10B981,#059669)", border: "none", borderRadius: 12, color: "white", fontWeight: 700, cursor: "pointer" }}>✅ Confirmar cobro</button>
         </div>
       </div>
     </div>
@@ -1805,11 +1819,11 @@ export default function App() {
     setFiadoManual(false); showToast("📋 Fiado agregado");
   }, [fiados, showToast]);
 
-  const cobrarFiado = useCallback(async (fiado, fecha) => {
+  const cobrarFiado = useCallback(async (fiado, fecha, tipoPago = "efectivo") => {
     const nf = fiados.map(f => f.id === fiado.id ? { ...f, cobrado: true, fechaCobro: fecha } : f);
     setFiados(nf);
     const targetDay  = fecha === todayKey() ? today : (history.find(d => d.date === fecha) || emptyDay(fecha));
-    const cobroVenta = { id: uid(), clienteId: fiado.clienteId, nombre: fiado.nombre, u20: 0, u12: 0, pago: "efectivo", nota: `Cobro fiado ${labelDate(fiado.fecha)}`, montoManual: fiado.monto };
+    const cobroVenta = { id: uid(), clienteId: fiado.clienteId, nombre: fiado.nombre, u20: 0, u12: 0, pago: tipoPago, nota: `Cobro fiado ${labelDate(fiado.fecha)}`, montoManual: fiado.monto };
     const newDay     = { ...targetDay, ventas: [...clampArr(targetDay.ventas), cobroVenta] };
     const nh         = [{ ...newDay, savedAt: Date.now() }, ...history.filter(d => d.date !== fecha)];
     setHistory(nh);
@@ -2113,26 +2127,6 @@ export default function App() {
             </div>
           )}
 
-          {/* ── WIDGET: Top clientes del mes ── */}
-          {clienteRanking.length > 0 && (
-            <GCard th={th} style={{ marginBottom: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: th.text }}>🏆 Top clientes del mes</div>
-                <button onClick={() => { setMainTab("clientes"); }} style={{ fontSize: 11, color: th.accent, background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>Ver todos →</button>
-              </div>
-              {clienteRanking.slice(0,3).map((c, i) => (
-                <div key={c.id} onClick={() => setSelectedCliente(c)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", marginBottom: 5, background: "rgba(255,255,255,0.03)", borderRadius: 10, cursor: "pointer" }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 7, background: i === 0 ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: i === 0 ? "#F59E0B" : th.textMuted }}>{i + 1}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: th.text }}>{c.nombre}</div>
-                    <ZoneBadge zoneId={c.zona} zones={zones} />
-                  </div>
-                  <div style={{ fontWeight: 700, color: th.accent, fontSize: 13 }}>{fmt(c.totalMes)}</div>
-                </div>
-              ))}
-            </GCard>
-          )}
-
           {/* ── VISITAS PROGRAMADAS ── */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: th.text }}>📋 Visitas de hoy</div>
@@ -2225,6 +2219,27 @@ export default function App() {
             <CalendarioMiniWidget history={history} prices={prices} th={th} onDayClick={date => { setSelectedDate(date); setMainTab("ventas"); setSubTab("caja"); }} />
           </GCard>
         </>}
+
+          {/* ── WIDGET: Top clientes del mes ── */}
+          {clienteRanking.length > 0 && (
+            <GCard th={th} style={{ marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: th.text }}>🏆 Top clientes del mes</div>
+                <button onClick={() => { setMainTab("clientes"); }} style={{ fontSize: 11, color: th.accent, background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>Ver todos →</button>
+              </div>
+              {clienteRanking.slice(0,3).map((c, i) => (
+                <div key={c.id} onClick={() => setSelectedCliente(c)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", marginBottom: 5, background: "rgba(255,255,255,0.03)", borderRadius: 10, cursor: "pointer" }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 7, background: i === 0 ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: i === 0 ? "#F59E0B" : th.textMuted }}>{i + 1}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: th.text }}>{c.nombre}</div>
+                    <ZoneBadge zoneId={c.zona} zones={zones} />
+                  </div>
+                  <div style={{ fontWeight: 700, color: th.accent, fontSize: 13 }}>{fmt(c.totalMes)}</div>
+                </div>
+              ))}
+            </GCard>
+          )}
+
 
         {/* ═══════════════════════ VENTAS ═══════════════════════ */}
         {mainTab === "ventas" && <>
