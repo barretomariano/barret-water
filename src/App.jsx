@@ -2218,7 +2218,6 @@ export default function App() {
             </div>
             <CalendarioMiniWidget history={history} prices={prices} th={th} onDayClick={date => { setSelectedDate(date); setMainTab("ventas"); setSubTab("caja"); }} />
           </GCard>
-        </>}
 
           {/* ── WIDGET: Top clientes del mes ── */}
           {clienteRanking.length > 0 && (
@@ -2239,8 +2238,7 @@ export default function App() {
               ))}
             </GCard>
           )}
-
-
+        </>}
         {/* ═══════════════════════ VENTAS ═══════════════════════ */}
         {mainTab === "ventas" && <>
           <div style={{ display: "flex", gap: 6, marginBottom: 16, overflowX: "auto" }}>
