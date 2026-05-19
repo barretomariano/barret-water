@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { feedback } from "./feedback";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FIREBASE REST
@@ -412,9 +413,9 @@ const LIGHT = {
 const glassCard = (th) => ({
   background: th.bgCard, border: `1px solid ${th.border}`, borderTop: `1px solid ${th.borderTop}`,
   borderRadius: 20,
-  backdropFilter: "blur(20px) saturate(1.6)",
-  WebkitBackdropFilter: "blur(20px) saturate(1.6)",
-  boxShadow: "0 4px 24px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.14)",
+  backdropFilter: "blur(24px) saturate(1.8)",
+  WebkitBackdropFilter: "blur(24px) saturate(1.8)",
+  boxShadow: "0 4px 28px rgba(0,0,0,0.26), 0 1px 4px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.16)",
   padding: "14px 16px", marginBottom: 12,
 });
 const inputStyle = (th) => ({
@@ -425,12 +426,55 @@ const inputStyle = (th) => ({
 const btnPrimary = {
   background: "linear-gradient(135deg,#38bdf8,#0284C7)", border: "none", borderRadius: 14,
   color: "white", fontSize: 14, fontWeight: 700, cursor: "pointer", padding: "13px",
-  width: "100%", boxShadow: "0 6px 20px rgba(56,189,248,0.25)", letterSpacing: "0.02em",
+  width: "100%", boxShadow: "0 6px 20px rgba(56,189,248,0.28), 0 2px 4px rgba(56,189,248,0.15)",
+  letterSpacing: "0.02em", transition: "transform 0.12s ease, box-shadow 0.12s ease",
 };
 const btnGhost = (th) => ({
   background: "rgba(255,255,255,0.06)", border: `1px solid ${th.border}`,
   borderRadius: 11, color: th.textMuted, cursor: "pointer", padding: "8px 14px", fontSize: 13,
+  transition: "background 0.15s ease, border-color 0.15s ease",
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GLOBAL STYLES — keyframes + utility classes
+// ─────────────────────────────────────────────────────────────────────────────
+function GlobalStyles() {
+  return (
+    <style>{`
+      @keyframes ldpulse   { 0%,100%{opacity:1} 50%{opacity:0.45} }
+      @keyframes spinRing  { to{transform:rotate(360deg)} }
+      @keyframes shimmer   { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+      @keyframes loadBar   { 0%{width:8%} 60%{width:78%} 100%{width:92%} }
+      @keyframes toastIn   { 0%{opacity:0;transform:translateX(-50%) translateY(-18px) scale(0.9)} 100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)} }
+      @keyframes popIn     { 0%{opacity:0;transform:scale(0.86)} 100%{opacity:1;transform:scale(1)} }
+      @keyframes slideUp   { 0%{opacity:0;transform:translateY(28px)} 100%{opacity:1;transform:translateY(0)} }
+      @keyframes tabFade   { 0%{opacity:0;transform:translateY(10px)} 100%{opacity:1;transform:translateY(0)} }
+      @keyframes glowPulse { 0%,100%{box-shadow:0 0 0 0 rgba(56,189,248,0)} 50%{box-shadow:0 0 0 8px rgba(56,189,248,0.18)} }
+      @keyframes ripple    { to{transform:scale(4);opacity:0} }
+
+      *, *::before, *::after { -webkit-tap-highlight-color: transparent; }
+      input, textarea, select { -webkit-appearance: none; }
+
+      .btn-tap {
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.11s cubic-bezier(0.34,1.56,0.64,1), opacity 0.1s ease;
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .btn-tap:active { transform: scale(0.93); opacity: 0.82; }
+
+      .tab-content { animation: tabFade 0.22s ease both; }
+      .modal-pop   { animation: popIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both; }
+      .modal-slide { animation: slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+      ::-webkit-scrollbar { width: 3px; height: 3px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    `}</style>
+  );
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UI PRIMITIVES
@@ -506,8 +550,8 @@ function Toggle({ value, onChange }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function ConfirmDialog({ msg, onConfirm, onCancel, th }) {
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ ...glassCard(th), maxWidth: 340, width: "100%", padding: 24 }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}>
+      <div className="modal-pop" style={{ ...glassCard(th), maxWidth: 340, width: "100%", padding: 24 }}>
         <div style={{ fontSize: 15, fontWeight: 600, color: th.text, marginBottom: 8 }}>⚠️ Confirmar acción</div>
         <div style={{ fontSize: 13, color: th.textMuted, marginBottom: 20 }}>{msg}</div>
         <div style={{ display: "flex", gap: 10 }}>
@@ -524,8 +568,8 @@ function ConfirmDialog({ msg, onConfirm, onCancel, th }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function BottomModal({ children, onClose, th }) {
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 300, display: "flex", alignItems: "flex-end" }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ width: "100%", maxWidth: 500, margin: "0 auto", background: th.bg, borderRadius: "22px 22px 0 0", padding: "16px 18px 40px", boxShadow: "0 -12px 48px rgba(0,0,0,0.4)", borderTop: `1px solid ${th.border}`, maxHeight: "92vh", overflowY: "auto" }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 300, display: "flex", alignItems: "flex-end", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-slide" style={{ width: "100%", maxWidth: 500, margin: "0 auto", background: th.bg, borderRadius: "24px 24px 0 0", padding: "16px 18px 40px", boxShadow: "0 -16px 56px rgba(0,0,0,0.5), 0 -1px 0 rgba(255,255,255,0.1)", borderTop: `1px solid ${th.borderTop}`, maxHeight: "92vh", overflowY: "auto" }}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 14, position: "relative" }}>
           <div style={{ width: 36, height: 4, background: th.border, borderRadius: 99 }} />
           <button onClick={onClose} style={{ position: "absolute", right: 0, top: -8, ...btnGhost(th), padding: "3px 10px", fontSize: 16 }}>✕</button>
@@ -622,7 +666,7 @@ function EntregarModal({ pedido, onConfirm, onClose, th }) {
       </div>
       <Label th={th}>Nota de visita</Label>
       <input type="text" placeholder="Algo para recordar..." value={nota} onChange={e => setNota(e.target.value)} style={{ ...inputStyle(th), marginBottom: 16 }} />
-      <button onClick={() => onConfirm({ pago, canje20: c20, canje12: c12, nota })} style={{ ...btnPrimary, background: "linear-gradient(135deg,#10B981,#059669)", boxShadow: "0 6px 20px rgba(16,185,129,0.3)" }}>
+      <button className="btn-tap" onClick={() => onConfirm({ pago, canje20: c20, canje12: c12, nota })} style={{ ...btnPrimary, background: "linear-gradient(135deg,#10B981,#059669)", boxShadow: "0 6px 20px rgba(16,185,129,0.3)" }}>
         ✅ Confirmar entrega
       </button>
     </BottomModal>
@@ -1669,7 +1713,13 @@ export default function App() {
   }, []); // eslint-disable-line
 
   // ── HELPERS ──
-  const showToast  = useCallback((msg, color = "#10B981") => { setToast({ msg, color }); setTimeout(() => setToast(null), 2800); }, []);
+  const showToast  = useCallback((msg, color = "#10B981") => {
+    setToast({ msg, color });
+    if (color === "#ef4444" || (typeof color === "string" && color.includes("ef4444"))) feedback.error();
+    else if (!color || color === "#10B981" || (typeof color === "string" && color.includes("10B981"))) feedback.success();
+    else feedback.tap();
+    setTimeout(() => setToast(null), 2800);
+  }, []);
   const askConfirm = useCallback((msg, onConfirm) => setConfirm({ msg, onConfirm }), []);
 
   const saveDay = useCallback(async (day) => {
@@ -1739,6 +1789,7 @@ export default function App() {
     ]);
 
     setEntregarModal(null);
+    feedback.delivery();
     showToast("✅ Entrega confirmada");
     if (notifEnabled.nuevaVenta) sendNotif("✅ Venta registrada", `${pedido.nombre} — ${pago}`);
   }, [history, fiados, clientes, pedidos, prices, selectedDate, notifEnabled, showToast]);
@@ -1772,6 +1823,7 @@ export default function App() {
     const nh = [{ ...newDay, savedAt: Date.now() }, ...history.filter(d => d.date !== newDay.date)];
     setHistory(nh);
     await storage.multiSet([["history_v5", nh], ["fiados_v2", newFiados], ["clientes_v1", newClientes]]);
+    feedback.cashier();
     showToast("✅ Venta registrada");
     if (notifEnabled.nuevaVenta) sendNotif("💰 Nueva venta", venta.nombre);
   }, [today, fiados, clientes, history, prices, selectedDate, notifEnabled, showToast]);
@@ -1801,7 +1853,9 @@ export default function App() {
   const handleCierreCaja = useCallback(async (cierreData) => {
     const newDay = { ...today, cierreCaja: cierreData };
     setToday(newDay); await saveDay(newDay);
-    setCierreCajaModal(false); showToast("🔒 Caja cerrada");
+    setCierreCajaModal(false);
+    feedback.cashier();
+    showToast("🔒 Caja cerrada");
     if (notifEnabled.cierreCaja) sendNotif("🔒 Caja cerrada", labelDate(today.date));
   }, [today, saveDay, notifEnabled, showToast]);
 
@@ -1981,20 +2035,32 @@ export default function App() {
 
   // ── LOADING ──
   if (loading) return (
-    <div style={{ minHeight: "100vh", background: "#060d1a", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
-      <img src={LOGO_B64} alt="" style={{ width: 72, height: 72, objectFit: "contain" }} />
-      <div style={{ color: "#38bdf8", fontWeight: 700, fontSize: 18, fontFamily: "system-ui" }}>Barret Water</div>
-      <div style={{ color: "#7c8fa8", fontSize: 13 }}>Cargando datos…</div>
-      <div style={{ width: 120, height: 4, borderRadius: 99, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
-        <div style={{ height: "100%", width: "55%", background: "linear-gradient(90deg,#38bdf8,#0284C7)", borderRadius: 99, animation: "ldpulse 1.2s ease-in-out infinite" }} />
+    <div style={{ minHeight: "100vh", background: "#060d1a", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 24 }}>
+      <div style={{ position: "relative", width: 92, height: 92, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1.5px solid rgba(56,189,248,0.12)" }} />
+        <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "2px solid transparent", borderTopColor: "#38bdf8", borderRightColor: "rgba(56,189,248,0.3)", animation: "spinRing 1.1s linear infinite" }} />
+        <img src={LOGO_B64} alt="" style={{ width: 58, height: 58, objectFit: "contain", animation: "ldpulse 2.4s ease-in-out infinite" }} />
       </div>
-      <style>{`@keyframes ldpulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
+      <div style={{ textAlign: "center" }}>
+        <div style={{ color: "#f1f5f9", fontWeight: 800, fontSize: 22, fontFamily: "'DM Sans',system-ui,sans-serif", letterSpacing: "-0.02em" }}>Barret Water</div>
+        <div style={{ color: "#475569", fontSize: 12, marginTop: 6, letterSpacing: "0.03em" }}>SINCRONIZANDO DATOS</div>
+      </div>
+      <div style={{ width: 160, height: 2, borderRadius: 99, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+        <div style={{ height: "100%", background: "linear-gradient(90deg,#38bdf8,#818cf8,#38bdf8)", backgroundSize: "200% 100%", borderRadius: 99, animation: "shimmer 1.6s linear infinite, loadBar 3.5s ease-out forwards" }} />
+      </div>
+      <style>{`
+        @keyframes ldpulse  { 0%,100%{opacity:1} 50%{opacity:0.55} }
+        @keyframes spinRing { to{transform:rotate(360deg)} }
+        @keyframes shimmer  { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+        @keyframes loadBar  { 0%{width:8%} 60%{width:78%} 100%{width:92%} }
+      `}</style>
     </div>
   );
 
   // ── RENDER ──
   return (
     <div style={{ minHeight: "100vh", background: th.bg, fontFamily: "'DM Sans',system-ui,sans-serif", color: th.text, paddingBottom: 100 }}>
+      <GlobalStyles />
 
       {/* MODALS */}
       {saleModal    && <SaleModal clientes={clientes} prices={prices} editVenta={saleModal !== "new" ? saleModal : null} onSave={saleModal === "new" ? addVenta : editVentaFn} onAddCliente={handleAddClienteFromModal} onClose={() => setSaleModal(null)} th={th} />}
@@ -2006,7 +2072,23 @@ export default function App() {
       {confirm      && <ConfirmDialog msg={confirm.msg} onConfirm={confirm.onConfirm} onCancel={() => setConfirm(null)} th={th} />}
 
       {/* TOAST */}
-      {toast && <div style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", background: toast.color, color: "white", padding: "10px 20px", borderRadius: 30, fontSize: 13, fontWeight: 600, zIndex: 999, boxShadow: "0 8px 24px rgba(0,0,0,0.4)", whiteSpace: "nowrap" }}>{toast.msg}</div>}
+      {toast && (
+        <div style={{
+          position: "fixed", top: 26, left: "50%", zIndex: 9999,
+          transform: "translateX(-50%)",
+          background: `linear-gradient(135deg,${toast.color}e8,${toast.color}bb)`,
+          backdropFilter: "blur(24px) saturate(1.8)",
+          WebkitBackdropFilter: "blur(24px) saturate(1.8)",
+          color: "#fff", padding: "11px 24px 11px 20px",
+          borderRadius: 40, fontSize: 13, fontWeight: 700,
+          whiteSpace: "nowrap", letterSpacing: "0.01em",
+          boxShadow: `0 8px 32px ${toast.color}50, 0 2px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.28)`,
+          border: `1px solid ${toast.color}55`,
+          animation: "toastIn 0.32s cubic-bezier(0.34,1.56,0.64,1) both",
+        }}>
+          {toast.msg}
+        </div>
+      )}
 
       {/* CLIENTE CHART MODAL */}
       {selectedCliente && (
@@ -2069,7 +2151,7 @@ export default function App() {
       </div>
 
       {/* CONTENT */}
-      <div style={{ padding: "16px 14px", maxWidth: 680, margin: "0 auto" }}>
+      <div key={mainTab} className="tab-content" style={{ padding: "16px 14px", maxWidth: 680, margin: "0 auto" }}>
 
         {/* ═══════════════════════ HOY (ex-RUTEO) ═══════════════════════ */}
         {mainTab === "ruteo" && <>
@@ -2775,9 +2857,15 @@ export default function App() {
           const active = mainTab === t.id;
           return (
             <button key={t.id}
-              onClick={() => { setMainTab(t.id); if (t.id === "ventas") setSubTab("caja"); if (t.id === "finanzas") setSubTab("dashboard"); }}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, padding: active ? "7px 16px" : "7px 12px", borderRadius: 32, border: "none", cursor: "pointer", transition: "all 0.2s cubic-bezier(.34,1.56,.64,1)", background: active ? "rgba(56,189,248,0.22)" : "transparent", boxShadow: active ? "inset 0 1px 0 rgba(255,255,255,0.18), 0 2px 8px rgba(56,189,248,0.18)" : "none", color: active ? th.accent : "rgba(255,255,255,0.45)", minWidth: active ? 58 : 44 }}>
-              <span style={{ fontSize: active ? 20 : 18, lineHeight: 1, filter: active ? "drop-shadow(0 0 6px rgba(56,189,248,0.6))" : "none", transition: "all 0.2s" }}>{t.icon}</span>
+              className="btn-tap"
+              onClick={() => {
+                feedback.tap();
+                setMainTab(t.id);
+                if (t.id === "ventas") setSubTab("caja");
+                if (t.id === "finanzas") setSubTab("dashboard");
+              }}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, padding: active ? "7px 16px" : "7px 12px", borderRadius: 32, border: "none", cursor: "pointer", transition: "all 0.22s cubic-bezier(.34,1.56,.64,1)", background: active ? "rgba(56,189,248,0.22)" : "transparent", boxShadow: active ? "inset 0 1px 0 rgba(255,255,255,0.18), 0 2px 8px rgba(56,189,248,0.18)" : "none", color: active ? th.accent : "rgba(255,255,255,0.45)", minWidth: active ? 58 : 44 }}>
+              <span style={{ fontSize: active ? 20 : 18, lineHeight: 1, filter: active ? "drop-shadow(0 0 6px rgba(56,189,248,0.65))" : "none", transition: "all 0.22s cubic-bezier(.34,1.56,.64,1)" }}>{t.icon}</span>
               {active && <span style={{ fontSize: 9, fontWeight: 700, color: th.accent, letterSpacing: 0.3 }}>{t.label}</span>}
             </button>
           );
