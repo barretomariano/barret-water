@@ -3,16 +3,72 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <meta name="theme-color" content="#07101f" />
+    <meta name="theme-color" content="#050b18" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Barret Water" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet" />
     <title>Barret Water</title>
     <style>
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { background: #07101f; font-family: 'DM Sans', system-ui, sans-serif; }
+      * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        background: #050b18;
+        font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        overscroll-behavior: none;
+      }
+      input, button, textarea, select { font-family: inherit; }
+      button { -webkit-tap-highlight-color: transparent; }
+
+      @keyframes bw-slideUp {
+        from { opacity: 0; transform: translateY(18px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes bw-fadeIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+      }
+      @keyframes bw-springPop {
+        0%   { opacity: 0; transform: scale(0.88); }
+        65%  { opacity: 1; transform: scale(1.03); }
+        100% { transform: scale(1); }
+      }
+      @keyframes bw-sheetUp {
+        from { transform: translateY(100%); opacity: 0.6; }
+        to   { transform: translateY(0);    opacity: 1; }
+      }
+      @keyframes bw-pulse {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.35; }
+      }
+      @keyframes bw-spin {
+        to { transform: rotate(360deg); }
+      }
+      @keyframes bw-tabIn {
+        from { opacity: 0; transform: translateY(10px) scale(0.98); }
+        to   { opacity: 1; transform: translateY(0)    scale(1); }
+      }
+
+      .bw-press {
+        transition: transform 0.12s cubic-bezier(.34,1.56,.64,1), box-shadow 0.12s ease, opacity 0.1s ease;
+        -webkit-user-select: none; user-select: none;
+      }
+      .bw-press:active {
+        transform: scale(0.93) !important;
+        opacity: 0.88;
+      }
+      .bw-card-enter { animation: bw-slideUp 0.32s cubic-bezier(.34,1.56,.64,1) both; }
+      .bw-tab-enter  { animation: bw-tabIn  0.28s cubic-bezier(.34,1.56,.64,1) both; }
+      .bw-sheet      { animation: bw-sheetUp 0.35s cubic-bezier(.34,1.56,.64,1) both; }
+      .bw-pop        { animation: bw-springPop 0.3s cubic-bezier(.34,1.56,.64,1) both; }
+
+      ::-webkit-scrollbar { display: none; }
+      * { scrollbar-width: none; }
     </style>
   </head>
   <body>

@@ -386,53 +386,60 @@ function sendNotif(title, body, icon = "/icon-192.png") {
   showNotifViaSW(title, body, icon);
 }
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 // THEME
 // ─────────────────────────────────────────────────────────────────────────────
 const DARK = {
-  bg: "#060d1a", bgCard: "linear-gradient(160deg,rgba(255,255,255,0.11) 0%,rgba(255,255,255,0.05) 100%)",
-  border: "rgba(255,255,255,0.12)", borderTop: "rgba(255,255,255,0.22)",
-  text: "#f1f5f9", textMuted: "#94a3b8", textDim: "#334155",
-  input: "rgba(255,255,255,0.08)", inputBorder: "rgba(255,255,255,0.16)",
-  navBg: "rgba(6,13,26,0.97)", accent: "#38bdf8", accentAlt: "#818cf8",
-  success: "#34d399", warning: "#fbbf24", danger: "#f87171",
+  bg: "#050b18",
+  bgCard: "linear-gradient(145deg,rgba(255,255,255,0.095) 0%,rgba(255,255,255,0.038) 100%)",
+  bgCardHover: "linear-gradient(145deg,rgba(255,255,255,0.13) 0%,rgba(255,255,255,0.06) 100%)",
+  border: "rgba(255,255,255,0.09)", borderTop: "rgba(255,255,255,0.20)",
+  text: "#eef4ff", textMuted: "#7a9cc0", textDim: "#243350",
+  input: "rgba(255,255,255,0.07)", inputBorder: "rgba(255,255,255,0.14)",
+  navBg: "rgba(5,11,24,0.96)", accent: "#22d3ee", accentAlt: "#a78bfa",
+  success: "#34d399", warning: "#fbbf24", danger: "#fb7185",
 };
 const LIGHT = {
-  bg: "#e8edf5", bgCard: "linear-gradient(160deg,rgba(255,255,255,0.82) 0%,rgba(226,232,240,0.75) 100%)",
-  border: "rgba(0,0,0,0.10)", borderTop: "rgba(255,255,255,0.90)",
-  text: "#0f172a", textMuted: "#475569", textDim: "#94a3b8",
-  input: "rgba(0,0,0,0.06)", inputBorder: "rgba(0,0,0,0.12)",
-  navBg: "rgba(232,237,245,0.97)", accent: "#0284C7", accentAlt: "#6366f1",
-  success: "#10B981", warning: "#F59E0B", danger: "#ef4444",
+  bg: "#edf2fa",
+  bgCard: "linear-gradient(145deg,rgba(255,255,255,0.88) 0%,rgba(220,230,245,0.78) 100%)",
+  bgCardHover: "linear-gradient(145deg,rgba(255,255,255,0.96) 0%,rgba(220,230,245,0.90) 100%)",
+  border: "rgba(0,0,0,0.08)", borderTop: "rgba(255,255,255,0.95)",
+  text: "#0c1a2e", textMuted: "#4a6280", textDim: "#9db4cc",
+  input: "rgba(0,0,0,0.05)", inputBorder: "rgba(0,0,0,0.11)",
+  navBg: "rgba(237,242,250,0.97)", accent: "#0284C7", accentAlt: "#7c3aed",
+  success: "#059669", warning: "#d97706", danger: "#dc2626",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DESIGN PRIMITIVES
 // ─────────────────────────────────────────────────────────────────────────────
 const glassCard = (th) => ({
-  background: th.bgCard, border: `1px solid ${th.border}`, borderTop: `1px solid ${th.borderTop}`,
-  borderRadius: 20,
-  backdropFilter: "blur(24px) saturate(1.8)",
-  WebkitBackdropFilter: "blur(24px) saturate(1.8)",
-  boxShadow: "0 4px 28px rgba(0,0,0,0.26), 0 1px 4px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.16)",
-  padding: "14px 16px", marginBottom: 12,
+  background: th.bgCard,
+  border: `1px solid ${th.border}`,
+  borderTop: `1px solid ${th.borderTop}`,
+  borderRadius: 22,
+  backdropFilter: "blur(28px) saturate(1.9)",
+  WebkitBackdropFilter: "blur(28px) saturate(1.9)",
+  boxShadow: "0 8px 36px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.13)",
+  padding: "16px 18px", marginBottom: 12,
 });
 const inputStyle = (th) => ({
-  padding: "11px 14px", background: th.input, border: `1px solid ${th.inputBorder}`,
-  borderRadius: 12, color: th.text, fontSize: 14, outline: "none",
+  padding: "13px 15px", background: th.input, border: `1.5px solid ${th.inputBorder}`,
+  borderRadius: 14, color: th.text, fontSize: 15, outline: "none",
   width: "100%", boxSizing: "border-box",
+  transition: "border-color 0.18s, box-shadow 0.18s",
 });
 const btnPrimary = {
-  background: "linear-gradient(135deg,#38bdf8,#0284C7)", border: "none", borderRadius: 14,
-  color: "white", fontSize: 14, fontWeight: 700, cursor: "pointer", padding: "13px",
-  width: "100%", boxShadow: "0 6px 20px rgba(56,189,248,0.28), 0 2px 4px rgba(56,189,248,0.15)",
-  letterSpacing: "0.02em", transition: "transform 0.12s ease, box-shadow 0.12s ease",
+  background: "linear-gradient(135deg,#22d3ee 0%,#0ea5e9 50%,#0284C7 100%)",
+  border: "none", borderRadius: 16,
+  color: "white", fontSize: 15, fontWeight: 700, cursor: "pointer", padding: "15px",
+  width: "100%",
+  boxShadow: "0 8px 28px rgba(34,211,238,0.32), inset 0 1px 0 rgba(255,255,255,0.22)",
+  letterSpacing: "0.02em",
 };
 const btnGhost = (th) => ({
-  background: "rgba(255,255,255,0.06)", border: `1px solid ${th.border}`,
-  borderRadius: 11, color: th.textMuted, cursor: "pointer", padding: "8px 14px", fontSize: 13,
-  transition: "background 0.15s ease, border-color 0.15s ease",
+  background: "rgba(255,255,255,0.07)", border: `1.5px solid ${th.border}`,
+  borderRadius: 13, color: th.textMuted, cursor: "pointer", padding: "9px 16px", fontSize: 13,
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -479,52 +486,57 @@ function GlobalStyles() {
 // ─────────────────────────────────────────────────────────────────────────────
 // UI PRIMITIVES
 // ─────────────────────────────────────────────────────────────────────────────
-function GCard({ children, style, th }) {
-  return <div style={{ ...glassCard(th), ...style }}>{children}</div>;
+function GCard({ children, style, th, animate }) {
+  return (
+    <div className={animate !== false ? "bw-card-enter" : undefined}
+      style={{ ...glassCard(th), ...style }}>
+      {children}
+    </div>
+  );
 }
 function Label({ children, th }) {
-  return <div style={{ fontSize: 11, fontWeight: 600, color: th?.textMuted, marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.05em" }}>{children}</div>;
+  return <div style={{ fontSize: 11, fontWeight: 700, color: th?.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.07em" }}>{children}</div>;
 }
 function Row({ label, value, vc, th }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0" }}>
-      <span style={{ fontSize: 12, color: th?.textMuted }}>{label}</span>
-      <span style={{ fontSize: 13, fontWeight: 600, color: vc || th?.text }}>{value}</span>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0" }}>
+      <span style={{ fontSize: 13, color: th?.textMuted }}>{label}</span>
+      <span style={{ fontSize: 14, fontWeight: 700, color: vc || th?.text }}>{value}</span>
     </div>
   );
 }
 function PBar({ pct, a, b, style }) {
   return (
-    <div style={{ height: 6, borderRadius: 99, background: "rgba(255,255,255,0.06)", overflow: "hidden", ...style }}>
-      <div style={{ height: "100%", width: `${Math.min(Math.max(pct, 0), 100)}%`, background: `linear-gradient(90deg,${a},${b})`, borderRadius: 99, transition: "width 0.5s ease" }} />
+    <div style={{ height: 7, borderRadius: 99, background: "rgba(255,255,255,0.07)", overflow: "hidden", ...style }}>
+      <div style={{ height: "100%", width: `${Math.min(Math.max(pct, 0), 100)}%`, background: `linear-gradient(90deg,${a},${b})`, borderRadius: 99, transition: "width 0.6s cubic-bezier(.34,1.56,.64,1)", boxShadow: `0 0 10px ${a}55` }} />
     </div>
   );
 }
 function StatBox({ label, value, color, sub, th }) {
   return (
-    <div style={{ padding: 12, background: `${color}12`, borderRadius: 13, border: `1px solid ${color}22`, borderTop: `1px solid ${color}35` }}>
-      <div style={{ fontSize: 10, color: th?.textMuted, marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</div>
-      <div style={{ fontSize: 18, fontWeight: 700, color }}>{value}</div>
-      {sub && <div style={{ fontSize: 10, color: th?.textMuted, marginTop: 2 }}>{sub}</div>}
+    <div style={{ padding: "14px 13px", background: `${color}15`, borderRadius: 16, border: `1px solid ${color}28`, borderTop: `1px solid ${color}45`, boxShadow: `inset 0 1px 0 ${color}20` }}>
+      <div style={{ fontSize: 10, color: th?.textMuted, marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color, letterSpacing: "-0.02em" }}>{value}</div>
+      {sub && <div style={{ fontSize: 11, color: th?.textMuted, marginTop: 3, fontWeight: 500 }}>{sub}</div>}
     </div>
   );
 }
 function Empty({ icon, text, th }) {
   return (
-    <div style={{ textAlign: "center", padding: "48px 20px", color: th?.textMuted }}>
-      <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.5 }}>{icon}</div>
-      <div style={{ fontSize: 13 }}>{text}</div>
+    <div style={{ textAlign: "center", padding: "56px 20px", color: th?.textMuted }}>
+      <div style={{ fontSize: 48, marginBottom: 14, opacity: 0.45, filter: "grayscale(0.2)" }}>{icon}</div>
+      <div style={{ fontSize: 14, fontWeight: 500 }}>{text}</div>
     </div>
   );
 }
 function SectionTitle({ children, th, style }) {
-  return <div style={{ fontSize: 12, fontWeight: 700, color: th?.textMuted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10, marginTop: 4, ...style }}>{children}</div>;
+  return <div style={{ fontSize: 11, fontWeight: 800, color: th?.textMuted, textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 10, marginTop: 4, ...style }}>{children}</div>;
 }
 function TotalRow({ label, value, color, th }) {
   return (
-    <div style={{ marginTop: 10, padding: "10px 13px", background: "rgba(255,255,255,0.04)", borderRadius: 10, display: "flex", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-      <span style={{ fontSize: 13, color: th?.textMuted }}>{label}</span>
-      <span style={{ fontSize: 15, fontWeight: 700, color: color || th?.text }}>{value}</span>
+    <div style={{ marginTop: 12, padding: "12px 14px", background: "rgba(255,255,255,0.05)", borderRadius: 13, display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid rgba(255,255,255,0.09)" }}>
+      <span style={{ fontSize: 13, color: th?.textMuted, fontWeight: 500 }}>{label}</span>
+      <span style={{ fontSize: 17, fontWeight: 800, color: color || th?.text, letterSpacing: "-0.01em" }}>{value}</span>
     </div>
   );
 }
@@ -532,15 +544,18 @@ function ZoneBadge({ zoneId, zones }) {
   const z = zones?.find(x => x.id === zoneId);
   if (!z) return null;
   return (
-    <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 20, background: `${z.color}22`, color: z.color, border: `1px solid ${z.color}44`, whiteSpace: "nowrap" }}>
+    <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 20, background: `${z.color}20`, color: z.color, border: `1px solid ${z.color}42`, whiteSpace: "nowrap", letterSpacing: "0.02em" }}>
       {z.icon} {z.name}
     </span>
   );
 }
 function Toggle({ value, onChange }) {
   return (
-    <div onClick={() => onChange(!value)} style={{ width: 44, height: 24, borderRadius: 99, background: value ? "#10B981" : "rgba(255,255,255,0.15)", cursor: "pointer", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
-      <div style={{ position: "absolute", top: 3, left: value ? 23 : 3, width: 18, height: 18, borderRadius: 99, background: "white", transition: "left 0.2s" }} />
+    <div
+      onClick={() => { feedback.tap(); onChange(!value); }}
+      className="bw-press"
+      style={{ width: 50, height: 28, borderRadius: 99, background: value ? "linear-gradient(135deg,#22d3ee,#0ea5e9)" : "rgba(255,255,255,0.13)", cursor: "pointer", position: "relative", transition: "background 0.22s cubic-bezier(.34,1.56,.64,1)", flexShrink: 0, boxShadow: value ? "0 3px 12px rgba(34,211,238,0.40)" : "none" }}>
+      <div style={{ position: "absolute", top: 4, left: value ? 26 : 4, width: 20, height: 20, borderRadius: 99, background: "white", transition: "left 0.22s cubic-bezier(.34,1.56,.64,1)", boxShadow: "0 2px 6px rgba(0,0,0,0.25)" }} />
     </div>
   );
 }
@@ -550,13 +565,13 @@ function Toggle({ value, onChange }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function ConfirmDialog({ msg, onConfirm, onCancel, th }) {
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}>
-      <div className="modal-pop" style={{ ...glassCard(th), maxWidth: 340, width: "100%", padding: 24 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: th.text, marginBottom: 8 }}>⚠️ Confirmar acción</div>
-        <div style={{ fontSize: 13, color: th.textMuted, marginBottom: 20 }}>{msg}</div>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "bw-fadeIn 0.18s ease both" }}>
+      <div className="bw-pop" style={{ ...glassCard(th), maxWidth: 340, width: "100%", padding: 26 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: th.text, marginBottom: 10 }}>⚠️ Confirmar acción</div>
+        <div style={{ fontSize: 14, color: th.textMuted, marginBottom: 22, lineHeight: 1.5 }}>{msg}</div>
         <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={onCancel} style={{ ...btnGhost(th), flex: 1, textAlign: "center" }}>Cancelar</button>
-          <button onClick={onConfirm} style={{ flex: 2, padding: "11px", background: "linear-gradient(135deg,#ef4444,#dc2626)", border: "none", borderRadius: 11, color: "white", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Confirmar</button>
+          <button onClick={() => { feedback.tap(); onCancel(); }} className="bw-press" style={{ ...btnGhost(th), flex: 1, textAlign: "center" }}>Cancelar</button>
+          <button onClick={() => { feedback.warning(); onConfirm(); }} className="bw-press" style={{ flex: 2, padding: "13px", background: "linear-gradient(135deg,#fb7185,#dc2626)", border: "none", borderRadius: 14, color: "white", fontWeight: 700, cursor: "pointer", fontSize: 14, boxShadow: "0 6px 20px rgba(251,113,133,0.35)" }}>Confirmar</button>
         </div>
       </div>
     </div>
@@ -568,11 +583,12 @@ function ConfirmDialog({ msg, onConfirm, onCancel, th }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function BottomModal({ children, onClose, th }) {
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 300, display: "flex", alignItems: "flex-end", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-slide" style={{ width: "100%", maxWidth: 500, margin: "0 auto", background: th.bg, borderRadius: "24px 24px 0 0", padding: "16px 18px 40px", boxShadow: "0 -16px 56px rgba(0,0,0,0.5), 0 -1px 0 rgba(255,255,255,0.1)", borderTop: `1px solid ${th.borderTop}`, maxHeight: "92vh", overflowY: "auto" }}>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 14, position: "relative" }}>
-          <div style={{ width: 36, height: 4, background: th.border, borderRadius: 99 }} />
-          <button onClick={onClose} style={{ position: "absolute", right: 0, top: -8, ...btnGhost(th), padding: "3px 10px", fontSize: 16 }}>✕</button>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 300, display: "flex", alignItems: "flex-end", animation: "bw-fadeIn 0.2s ease both" }}
+      onClick={e => e.target === e.currentTarget && (feedback.tap(), onClose())}>
+      <div className="bw-sheet" style={{ width: "100%", maxWidth: 500, margin: "0 auto", background: th.bg, borderRadius: "26px 26px 0 0", padding: "14px 18px 44px", boxShadow: "0 -16px 60px rgba(0,0,0,0.5)", borderTop: `1px solid ${th.borderTop}`, maxHeight: "93vh", overflowY: "auto" }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 18, position: "relative" }}>
+          <div style={{ width: 42, height: 5, background: th.border, borderRadius: 99 }} />
+          <button onClick={() => { feedback.tap(); onClose(); }} className="bw-press" style={{ position: "absolute", right: 0, top: -10, ...btnGhost(th), padding: "4px 12px", fontSize: 16, borderRadius: 12 }}>✕</button>
         </div>
         {children}
       </div>
@@ -666,7 +682,7 @@ function EntregarModal({ pedido, onConfirm, onClose, th }) {
       </div>
       <Label th={th}>Nota de visita</Label>
       <input type="text" placeholder="Algo para recordar..." value={nota} onChange={e => setNota(e.target.value)} style={{ ...inputStyle(th), marginBottom: 16 }} />
-      <button className="btn-tap" onClick={() => onConfirm({ pago, canje20: c20, canje12: c12, nota })} style={{ ...btnPrimary, background: "linear-gradient(135deg,#10B981,#059669)", boxShadow: "0 6px 20px rgba(16,185,129,0.3)" }}>
+      <button onClick={() => { feedback.success(); onConfirm({ pago, canje20: c20, canje12: c12, nota }); }} className="bw-press" style={{ ...btnPrimary, background: "linear-gradient(135deg,#10B981,#059669)", boxShadow: "0 8px 28px rgba(16,185,129,0.38)" }}>
         ✅ Confirmar entrega
       </button>
     </BottomModal>
@@ -711,7 +727,7 @@ function NuevoPedidoModal({ clientes, editPedido, onSave, onClose, onAddCliente,
       </div>
       <Label th={th}>Nota</Label>
       <input type="text" placeholder="Observación..." value={form.nota || ""} onChange={e => setForm(v => ({ ...v, nota: e.target.value }))} style={{ ...inputStyle(th), marginBottom: 16 }} />
-      <button onClick={() => canSave && onSave({ ...form, id: editPedido?.id || uid() })} disabled={!canSave}
+      <button onClick={() => canSave && (feedback.success(), onSave({ ...form, id: editPedido?.id || uid() }))} disabled={!canSave} className="bw-press"
         style={{ ...btnPrimary, opacity: canSave ? 1 : 0.4, cursor: canSave ? "pointer" : "not-allowed" }}>
         {editPedido ? "✅ Guardar cambios" : "➕ Agregar pedido"}
       </button>
@@ -781,7 +797,7 @@ function SaleModal({ clientes, prices, onSave, onClose, onAddCliente, editVenta,
           <span style={{ fontWeight: 700, fontSize: 18, color: tipo?.color }}>{fmt(monto)}</span>
         </div>
       )}
-      <button onClick={() => canSave && onSave({ ...venta, id: editVenta?.id || uid() })} disabled={!canSave}
+      <button onClick={() => canSave && (feedback.success(), onSave({ ...venta, id: editVenta?.id || uid() }))} disabled={!canSave} className="bw-press"
         style={{ ...btnPrimary, opacity: canSave ? 1 : 0.4, cursor: canSave ? "pointer" : "not-allowed" }}>
         {editVenta ? "✅ Guardar cambios" : "✅ Registrar venta"}
       </button>
@@ -819,8 +835,8 @@ function CobrarModal({ fiado, onCobrar, onClose, th }) {
           Se registrará como <strong style={{ color: TIPOS.find(t=>t.id===tipoPago)?.color }}>{tipoPago}</strong> en el reporte del {labelDate(fecha)}.
         </div>
         <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={onClose} style={{ ...btnGhost(th), flex: 1, textAlign: "center" }}>Cancelar</button>
-          <button onClick={() => onCobrar(fiado, fecha, tipoPago)} style={{ flex: 2, padding: "12px", background: "linear-gradient(135deg,#10B981,#059669)", border: "none", borderRadius: 12, color: "white", fontWeight: 700, cursor: "pointer" }}>✅ Confirmar cobro</button>
+          <button onClick={() => { feedback.tap(); onClose(); }} className="bw-press" style={{ ...btnGhost(th), flex: 1, textAlign: "center" }}>Cancelar</button>
+          <button onClick={() => { feedback.success(); onCobrar(fiado, fecha, tipoPago); }} className="bw-press" style={{ flex: 2, padding: "14px", background: "linear-gradient(135deg,#34d399,#059669)", border: "none", borderRadius: 14, color: "white", fontWeight: 700, cursor: "pointer", fontSize: 14, boxShadow: "0 8px 24px rgba(52,211,153,0.38)" }}>✅ Confirmar cobro</button>
         </div>
       </div>
     </div>
@@ -856,8 +872,8 @@ function FiadoManualModal({ clientes, onSave, onClose, th }) {
         <Label th={th}>Nota</Label>
         <input type="text" placeholder="..." value={nota} onChange={e => setNota(e.target.value)} style={inputStyle(th)} />
       </div>
-      <button onClick={() => canSave && onSave({ id: uid(), nombre, clienteId, monto: parseFloat(monto), fecha, nota, cobrado: false })} disabled={!canSave}
-        style={{ ...btnPrimary, background: "linear-gradient(135deg,#F59E0B,#d97706)", boxShadow: "0 6px 20px rgba(245,158,11,0.3)", opacity: canSave ? 1 : 0.4, cursor: canSave ? "pointer" : "not-allowed" }}>
+      <button onClick={() => canSave && (feedback.success(), onSave({ id: uid(), nombre, clienteId, monto: parseFloat(monto), fecha, nota, cobrado: false }))} disabled={!canSave} className="bw-press"
+        style={{ ...btnPrimary, background: "linear-gradient(135deg,#fbbf24,#d97706)", boxShadow: "0 8px 28px rgba(251,191,36,0.35)", opacity: canSave ? 1 : 0.4, cursor: canSave ? "pointer" : "not-allowed" }}>
         ✅ Agregar fiado
       </button>
     </BottomModal>
@@ -931,7 +947,7 @@ function GastoPanel({ gastos, setGastos, fijosCats, onSave, onBack, th }) {
         style={{ width: "100%", padding: "9px", background: "transparent", border: `1px dashed ${th.border}`, borderRadius: 10, color: th.textMuted, cursor: "pointer", fontSize: 12, marginBottom: 14 }}>
         + Agregar gasto
       </button>
-      <button onClick={onSave} style={{ ...btnPrimary, background: "linear-gradient(135deg,#F59E0B,#d97706)", boxShadow: "0 6px 20px rgba(245,158,11,0.25)" }}>
+      <button onClick={() => { feedback.success(); onSave(); }} className="bw-press" style={{ ...btnPrimary, background: "linear-gradient(135deg,#fbbf24,#d97706)", boxShadow: "0 8px 28px rgba(251,191,36,0.32)" }}>
         ✅ Guardar gastos
       </button>
     </div>
@@ -995,9 +1011,9 @@ function CierreCajaModal({ day, prices, sectors, onCerrar, onClose, th }) {
         <div onClick={() => setConfirmado(v => !v)} style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${confirmado ? "#10B981" : th.border}`, background: confirmado ? "#10B981" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "white", flexShrink: 0 }}>{confirmado ? "✓" : ""}</div>
         <span style={{ fontSize: 13, color: th.textMuted }}>Confirmé el conteo físico y la separación del dinero</span>
       </div>
-      <button onClick={() => confirmado && onCerrar({ conteoEfectivo: parseFloat(conteo.efectivo || 0), conteoTransferencia: parseFloat(conteo.transferencia || 0), diferenciaEf, diferenciaTr, fecha: day.date, cerradoEn: Date.now() })}
-        disabled={!confirmado}
-        style={{ ...btnPrimary, background: confirmado ? "linear-gradient(135deg,#10B981,#059669)" : undefined, opacity: confirmado ? 1 : 0.4, cursor: confirmado ? "pointer" : "not-allowed" }}>
+      <button onClick={() => confirmado && (feedback.success(), onCerrar({ conteoEfectivo: parseFloat(conteo.efectivo || 0), conteoTransferencia: parseFloat(conteo.transferencia || 0), diferenciaEf, diferenciaTr, fecha: day.date, cerradoEn: Date.now() }))}
+        disabled={!confirmado} className="bw-press"
+        style={{ ...btnPrimary, background: confirmado ? "linear-gradient(135deg,#10B981,#059669)" : undefined, opacity: confirmado ? 1 : 0.4, cursor: confirmado ? "pointer" : "not-allowed", boxShadow: confirmado ? "0 8px 28px rgba(16,185,129,0.38)" : "none" }}>
         🔒 Cerrar caja del día
       </button>
     </BottomModal>
@@ -2134,67 +2150,71 @@ export default function App() {
       )}
 
       {/* HEADER */}
-      <div style={{ background: darkMode ? "linear-gradient(135deg,rgba(56,189,248,0.1),rgba(6,13,26,0.95))" : "linear-gradient(135deg,rgba(2,132,199,0.06),rgba(248,250,252,0.97))", borderBottom: `1px solid ${th.border}`, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100, backdropFilter: "blur(16px)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <img src={LOGO_B64} alt="logo" style={{ width: 34, height: 34, objectFit: "contain" }} />
+      <div style={{ background: darkMode ? "linear-gradient(135deg,rgba(34,211,238,0.08),rgba(5,11,24,0.96))" : "linear-gradient(135deg,rgba(2,132,199,0.05),rgba(240,246,255,0.97))", borderBottom: `1px solid ${th.border}`, padding: "13px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100, backdropFilter: "blur(20px) saturate(1.8)", WebkitBackdropFilter: "blur(20px) saturate(1.8)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+          <img src={LOGO_B64} alt="logo" style={{ width: 36, height: 36, objectFit: "contain", filter: "drop-shadow(0 2px 8px rgba(34,211,238,0.35))" }} />
           <div>
-            <div style={{ fontWeight: 700, fontSize: 14, color: th.text }}>{appName}</div>
-            <div style={{ fontSize: 10, color: th.textMuted }}>{labelDate(todayKey())}</div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: th.text, letterSpacing: "-0.01em" }}>{appName}</div>
+            <div style={{ fontSize: 10, color: th.textMuted, fontWeight: 500 }}>{labelDate(todayKey())}</div>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {totalSinDevolver > 0 && <button onClick={() => setShowBidones(true)} style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 20, padding: "4px 11px", color: "#ef4444", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>🪣 {totalSinDevolver}</button>}
-          {fiadosPendTotal > 0 && <div style={{ textAlign: "right" }}><div style={{ fontSize: 9, color: th.textMuted }}>Fiados</div><div style={{ color: "#F59E0B", fontWeight: 700, fontSize: 12 }}>{fmt(fiadosPendTotal)}</div></div>}
-          {cierreSemana.cobrado > 0 && <div style={{ textAlign: "right" }}><div style={{ fontSize: 9, color: th.textMuted }}>Semana</div><div style={{ color: th.accent, fontWeight: 700, fontSize: 13 }}>{fmt(cierreSemana.cobrado)}</div></div>}
-          <button onClick={async () => { const nd = !darkMode; setDarkMode(nd); await sset("darkMode", nd); }} style={{ ...btnGhost(th), padding: "6px 10px", fontSize: 14 }}>{darkMode ? "☀️" : "🌙"}</button>
+          {totalSinDevolver > 0 && <button onClick={() => { feedback.tap(); setShowBidones(true); }} className="bw-press" style={{ background: "rgba(251,113,133,0.15)", border: "1px solid rgba(251,113,133,0.32)", borderRadius: 20, padding: "5px 12px", color: "#fb7185", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>🪣 {totalSinDevolver}</button>}
+          {fiadosPendTotal > 0 && <div style={{ textAlign: "right" }}><div style={{ fontSize: 9, color: th.textMuted, fontWeight: 600 }}>Fiados</div><div style={{ color: "#fbbf24", fontWeight: 800, fontSize: 12 }}>{fmt(fiadosPendTotal)}</div></div>}
+          {cierreSemana.cobrado > 0 && <div style={{ textAlign: "right" }}><div style={{ fontSize: 9, color: th.textMuted, fontWeight: 600 }}>Semana</div><div style={{ color: th.accent, fontWeight: 800, fontSize: 13 }}>{fmt(cierreSemana.cobrado)}</div></div>}
+          <button onClick={async () => { feedback.tap(); const nd = !darkMode; setDarkMode(nd); await sset("darkMode", nd); }} className="bw-press" style={{ ...btnGhost(th), padding: "7px 11px", fontSize: 15 }}>{darkMode ? "☀️" : "🌙"}</button>
         </div>
       </div>
 
       {/* CONTENT */}
-      <div key={mainTab} className="tab-content" style={{ padding: "16px 14px", maxWidth: 680, margin: "0 auto" }}>
+      <div key={mainTab} className="bw-tab-enter" style={{ padding: "16px 14px", maxWidth: 680, margin: "0 auto" }}>
 
         {/* ═══════════════════════ HOY (ex-RUTEO) ═══════════════════════ */}
         {mainTab === "ruteo" && <>
 
           {/* ── WIDGETS FILA 1: KPIs del día ── */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-            <div onClick={() => { setMainTab("ventas"); setSubTab("caja"); }}
-              style={{ background: `linear-gradient(135deg,${th.accent}22,${th.accent}08)`, border: `1px solid ${th.accent}35`, borderRadius: 16, padding: "14px 16px", cursor: "pointer", position: "relative", overflow: "hidden" }}>
-              <div style={{ fontSize: 10, color: th.textMuted, textTransform: "uppercase", fontWeight: 600, marginBottom: 4 }}>Cobrado hoy</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: th.accent }}>{fmt(todayT.cobrado)}</div>
-              <div style={{ fontSize: 10, color: th.textMuted, marginTop: 2 }}>{todayT.u20 + todayT.u12} bidones · {today.ventas?.length || 0} ventas</div>
-              <PBar pct={goalProgress} a={th.accent} b="#38bdf8" style={{ marginTop: 8 }} />
-              <div style={{ fontSize: 9, color: th.textMuted, marginTop: 3 }}>Meta: {fmt(goalArs)} · {Math.round(goalProgress)}%</div>
-              {today.cierreCaja && <div style={{ position: "absolute", top: 8, right: 10, fontSize: 14 }}>🔒</div>}
+            <div onClick={() => { feedback.tap(); setMainTab("ventas"); setSubTab("caja"); }}
+              className="bw-press"
+              style={{ background: `linear-gradient(135deg,${th.accent}26,${th.accent}0a)`, border: `1px solid ${th.accent}40`, borderRadius: 18, padding: "16px 17px", cursor: "pointer", position: "relative", overflow: "hidden", boxShadow: `0 4px 20px ${th.accent}18` }}>
+              <div style={{ fontSize: 10, color: th.textMuted, textTransform: "uppercase", fontWeight: 700, marginBottom: 5, letterSpacing: "0.06em" }}>Cobrado hoy</div>
+              <div style={{ fontSize: 26, fontWeight: 800, color: th.accent, letterSpacing: "-0.03em" }}>{fmt(todayT.cobrado)}</div>
+              <div style={{ fontSize: 10, color: th.textMuted, marginTop: 3, fontWeight: 500 }}>{todayT.u20 + todayT.u12} bidones · {today.ventas?.length || 0} ventas</div>
+              <PBar pct={goalProgress} a={th.accent} b="#22d3ee" style={{ marginTop: 10 }} />
+              <div style={{ fontSize: 9, color: th.textMuted, marginTop: 4, fontWeight: 500 }}>Meta: {fmt(goalArs)} · {Math.round(goalProgress)}%</div>
+              {today.cierreCaja && <div style={{ position: "absolute", top: 10, right: 12, fontSize: 15 }}>🔒</div>}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <div onClick={() => { setMainTab("ventas"); setSubTab("fiados"); }}
-                style={{ flex: 1, background: fiadosPendTotal > 0 ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.04)", border: `1px solid ${fiadosPendTotal > 0 ? "rgba(245,158,11,0.3)" : th.border}`, borderRadius: 13, padding: "10px 14px", cursor: "pointer" }}>
-                <div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase", fontWeight: 600 }}>Fiados pend.</div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: fiadosPendTotal > 0 ? "#F59E0B" : th.textDim }}>{fiadosPendTotal > 0 ? fmt(fiadosPendTotal) : "—"}</div>
+              <div onClick={() => { feedback.tap(); setMainTab("ventas"); setSubTab("fiados"); }}
+                className="bw-press"
+                style={{ flex: 1, background: fiadosPendTotal > 0 ? "rgba(251,191,36,0.14)" : "rgba(255,255,255,0.05)", border: `1px solid ${fiadosPendTotal > 0 ? "rgba(251,191,36,0.35)" : th.border}`, borderRadius: 16, padding: "11px 14px", cursor: "pointer", boxShadow: fiadosPendTotal > 0 ? "0 3px 14px rgba(251,191,36,0.15)" : "none" }}>
+                <div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.05em" }}>Fiados pend.</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: fiadosPendTotal > 0 ? "#fbbf24" : th.textDim }}>{fiadosPendTotal > 0 ? fmt(fiadosPendTotal) : "—"}</div>
               </div>
-              <div onClick={() => { setMainTab("finanzas"); setSubTab("dashboard"); }}
-                style={{ flex: 1, background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)", borderRadius: 13, padding: "10px 14px", cursor: "pointer" }}>
-                <div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase", fontWeight: 600 }}>Semana</div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#8B5CF6" }}>{fmt(cierreSemana.cobrado)}</div>
+              <div onClick={() => { feedback.tap(); setMainTab("finanzas"); setSubTab("dashboard"); }}
+                className="bw-press"
+                style={{ flex: 1, background: "rgba(167,139,250,0.12)", border: "1px solid rgba(167,139,250,0.28)", borderRadius: 16, padding: "11px 14px", cursor: "pointer", boxShadow: "0 3px 14px rgba(167,139,250,0.12)" }}>
+                <div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.05em" }}>Semana</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#a78bfa" }}>{fmt(cierreSemana.cobrado)}</div>
               </div>
             </div>
           </div>
 
           {/* ── WIDGETS FILA 2: Efectivo / Transfer / Gastos ── */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
-            <div style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 13, padding: "10px 12px" }}>
-              <div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase", fontWeight: 600 }}>Efectivo</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#10B981" }}>{fmt(todayT.efectivo)}</div>
+            <div style={{ background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.28)", borderRadius: 15, padding: "11px 12px" }}>
+              <div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.05em" }}>Efectivo</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#34d399", letterSpacing: "-0.01em" }}>{fmt(todayT.efectivo)}</div>
             </div>
-            <div style={{ background: `${th.accent}0d`, border: `1px solid ${th.accent}25`, borderRadius: 13, padding: "10px 12px" }}>
-              <div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase", fontWeight: 600 }}>Transfer.</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: th.accent }}>{fmt(todayT.transferencia)}</div>
+            <div style={{ background: `${th.accent}10`, border: `1px solid ${th.accent}28`, borderRadius: 15, padding: "11px 12px" }}>
+              <div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.05em" }}>Transfer.</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: th.accent, letterSpacing: "-0.01em" }}>{fmt(todayT.transferencia)}</div>
             </div>
-            <div onClick={() => { setMainTab("finanzas"); setSubTab("gastos"); }}
-              style={{ background: (todayT.gastos > 0 || cierreMes.gastos > 0) ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.04)", border: `1px solid ${(todayT.gastos > 0 || cierreMes.gastos > 0) ? "rgba(239,68,68,0.25)" : th.border}`, borderRadius: 13, padding: "10px 12px", cursor: "pointer" }}>
-              <div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase", fontWeight: 600 }}>{todayT.gastos > 0 ? "Gastos hoy" : "Gastos mes"}</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: (todayT.gastos > 0 || cierreMes.gastos > 0) ? "#ef4444" : th.textDim }}>{todayT.gastos > 0 ? fmt(todayT.gastos) : cierreMes.gastos > 0 ? fmt(cierreMes.gastos) : "—"}</div>
+            <div onClick={() => { feedback.tap(); setMainTab("finanzas"); setSubTab("gastos"); }}
+              className="bw-press"
+              style={{ background: (todayT.gastos > 0 || cierreMes.gastos > 0) ? "rgba(251,113,133,0.12)" : "rgba(255,255,255,0.04)", border: `1px solid ${(todayT.gastos > 0 || cierreMes.gastos > 0) ? "rgba(251,113,133,0.28)" : th.border}`, borderRadius: 15, padding: "11px 12px", cursor: "pointer" }}>
+              <div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.05em" }}>{todayT.gastos > 0 ? "Gastos hoy" : "Gastos mes"}</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: (todayT.gastos > 0 || cierreMes.gastos > 0) ? "#fb7185" : th.textDim, letterSpacing: "-0.01em" }}>{todayT.gastos > 0 ? fmt(todayT.gastos) : cierreMes.gastos > 0 ? fmt(cierreMes.gastos) : "—"}</div>
             </div>
           </div>
 
@@ -2378,8 +2398,8 @@ export default function App() {
                 );
               })}
               <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                <button onClick={() => setSaleModal("new")} style={{ ...btnPrimary, flex: 1 }}>+ Nueva venta</button>
-                <button onClick={() => setSubTab("gastos")} style={{ flex: 1, padding: "12px", background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.3)", borderRadius: 12, color: "#8B5CF6", cursor: "pointer", fontWeight: 700, fontSize: 14 }}>+ Nuevo gasto</button>
+                <button onClick={() => { feedback.tap(); setSaleModal("new"); }} className="bw-press" style={{ ...btnPrimary, flex: 1 }}>+ Nueva venta</button>
+                <button onClick={() => { feedback.tap(); setSubTab("gastos"); }} className="bw-press" style={{ flex: 1, padding: "15px", background: "linear-gradient(135deg,rgba(167,139,250,0.20),rgba(124,58,237,0.14))", border: "1px solid rgba(167,139,250,0.35)", borderRadius: 16, color: "#a78bfa", cursor: "pointer", fontWeight: 700, fontSize: 15, boxShadow: "0 4px 16px rgba(124,58,237,0.18)" }}>+ Nuevo gasto</button>
               </div>
             </div>
 
@@ -2554,8 +2574,8 @@ export default function App() {
                 <Label th={th}>Nota</Label>
                 <input type="text" value={cForm.nota} onChange={e => setCForm(f => ({ ...f, nota: e.target.value }))} style={{ ...inputStyle(th), marginBottom: 16 }} />
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => { setEditingCli(null); setShowAddCliModal(false); setCForm(EMPTY_CLI_FORM); }} style={btnGhost(th)}>Cancelar</button>
-                  <button onClick={() => { saveCliente(); setShowAddCliModal(false); }} style={{ ...btnPrimary, flex: 1, background: "linear-gradient(135deg,#8B5CF6,#7C3AED)", boxShadow: "0 6px 20px rgba(139,92,246,0.3)" }}>
+                  <button onClick={() => { feedback.tap(); setEditingCli(null); setShowAddCliModal(false); setCForm(EMPTY_CLI_FORM); }} className="bw-press" style={btnGhost(th)}>Cancelar</button>
+                  <button onClick={() => { feedback.success(); saveCliente(); setShowAddCliModal(false); }} className="bw-press" style={{ ...btnPrimary, flex: 1, background: "linear-gradient(135deg,#a78bfa,#7C3AED)", boxShadow: "0 8px 28px rgba(167,139,250,0.38)" }}>
                     {editingCli ? "✅ Guardar cambios" : "👤 Agregar cliente"}
                   </button>
                 </div>
@@ -2565,12 +2585,9 @@ export default function App() {
 
           {/* Botón (+) flotante liquid glass */}
           {mainTab === "clientes" && !showAddCliModal && !editingCli && (
-            <button onClick={() => { setCForm(EMPTY_CLI_FORM); setShowAddCliModal(true); }}
-              style={{ position: "fixed", bottom: 90, right: 20, width: 56, height: 56, borderRadius: "50%", background: "rgba(139,92,246,0.25)", backdropFilter: "blur(20px) saturate(1.8)", WebkitBackdropFilter: "blur(20px) saturate(1.8)", border: "1px solid rgba(139,92,246,0.45)", boxShadow: "0 8px 32px rgba(139,92,246,0.4), inset 0 1px 0 rgba(255,255,255,0.2)", color: "#c4b5fd", fontSize: 28, fontWeight: 300, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 199, transition: "transform 0.15s" }}
-              onMouseDown={e => e.currentTarget.style.transform = "scale(0.92)"}
-              onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
-              onTouchStart={e => e.currentTarget.style.transform = "scale(0.92)"}
-              onTouchEnd={e => e.currentTarget.style.transform = "scale(1)"}>
+            <button onClick={() => { feedback.tap(); setCForm(EMPTY_CLI_FORM); setShowAddCliModal(true); }}
+              className="bw-press"
+              style={{ position: "fixed", bottom: 94, right: 20, width: 60, height: 60, borderRadius: "50%", background: "linear-gradient(135deg,rgba(167,139,250,0.35),rgba(124,58,237,0.28))", backdropFilter: "blur(24px) saturate(1.9)", WebkitBackdropFilter: "blur(24px) saturate(1.9)", border: "1px solid rgba(167,139,250,0.50)", boxShadow: "0 10px 36px rgba(124,58,237,0.45), inset 0 1px 0 rgba(255,255,255,0.22)", color: "#c4b5fd", fontSize: 30, fontWeight: 300, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 199 }}>
               +
             </button>
           )}
@@ -2829,7 +2846,7 @@ export default function App() {
             <button onClick={() => setTmpFijosCats([...tmpFijosCats, { id: uid(), name: "Nueva categoría", icon: "📌" }])} style={{ width: "100%", padding: "8px", background: "transparent", border: `1px dashed ${th.border}`, borderRadius: 10, color: th.textMuted, cursor: "pointer", fontSize: 12 }}>+ Agregar categoría</button>
           </GCard>
 
-          <button onClick={saveCfg} style={{ ...btnPrimary, marginBottom: 12 }}>✅ Guardar configuración</button>
+          <button onClick={() => { feedback.success(); saveCfg(); }} className="bw-press" style={{ ...btnPrimary, marginBottom: 12 }}>✅ Guardar configuración</button>
 
           <GCard th={th} style={{ marginBottom: 12 }}>
             <SectionTitle th={th}>Backup & Restauración</SectionTitle>
@@ -2851,22 +2868,21 @@ export default function App() {
       </div>
 
       {/* BOTTOM NAV */}
-      {/* NAV FLOTANTE — liquid glass iOS 26 */}
-      <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 200, display: "flex", alignItems: "center", gap: 2, padding: "8px 12px", borderRadius: 40, background: "rgba(10,20,40,0.55)", backdropFilter: "blur(28px) saturate(1.8)", WebkitBackdropFilter: "blur(28px) saturate(1.8)", border: "1px solid rgba(255,255,255,0.13)", boxShadow: "0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.12)", whiteSpace: "nowrap" }}>
+      <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 200, display: "flex", alignItems: "center", gap: 3, padding: "9px 14px", borderRadius: 44, background: "rgba(8,16,34,0.62)", backdropFilter: "blur(32px) saturate(2.0)", WebkitBackdropFilter: "blur(32px) saturate(2.0)", border: "1px solid rgba(255,255,255,0.14)", boxShadow: "0 12px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.14)", whiteSpace: "nowrap" }}>
         {NAV_TABS.map(t => {
           const active = mainTab === t.id;
           return (
             <button key={t.id}
-              className="btn-tap"
               onClick={() => {
+                if (mainTab === t.id) return;
                 feedback.tap();
                 setMainTab(t.id);
                 if (t.id === "ventas") setSubTab("caja");
                 if (t.id === "finanzas") setSubTab("dashboard");
               }}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, padding: active ? "7px 16px" : "7px 12px", borderRadius: 32, border: "none", cursor: "pointer", transition: "all 0.22s cubic-bezier(.34,1.56,.64,1)", background: active ? "rgba(56,189,248,0.22)" : "transparent", boxShadow: active ? "inset 0 1px 0 rgba(255,255,255,0.18), 0 2px 8px rgba(56,189,248,0.18)" : "none", color: active ? th.accent : "rgba(255,255,255,0.45)", minWidth: active ? 58 : 44 }}>
-              <span style={{ fontSize: active ? 20 : 18, lineHeight: 1, filter: active ? "drop-shadow(0 0 6px rgba(56,189,248,0.65))" : "none", transition: "all 0.22s cubic-bezier(.34,1.56,.64,1)" }}>{t.icon}</span>
-              {active && <span style={{ fontSize: 9, fontWeight: 700, color: th.accent, letterSpacing: 0.3 }}>{t.label}</span>}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, padding: active ? "8px 18px" : "8px 13px", borderRadius: 36, border: "none", cursor: "pointer", transition: "all 0.25s cubic-bezier(.34,1.56,.64,1)", background: active ? "rgba(34,211,238,0.22)" : "transparent", boxShadow: active ? "inset 0 1px 0 rgba(255,255,255,0.20), 0 3px 12px rgba(34,211,238,0.22)" : "none", color: active ? th.accent : "rgba(255,255,255,0.40)", minWidth: active ? 62 : 46 }}>
+              <span style={{ fontSize: active ? 21 : 19, lineHeight: 1, filter: active ? "drop-shadow(0 0 8px rgba(34,211,238,0.7))" : "none", transition: "all 0.25s cubic-bezier(.34,1.56,.64,1)", transform: active ? "scale(1.12)" : "scale(1)" }}>{t.icon}</span>
+              {active && <span style={{ fontSize: 9, fontWeight: 800, color: th.accent, letterSpacing: 0.4, animation: "bw-fadeIn 0.15s ease both" }}>{t.label}</span>}
             </button>
           );
         })}
