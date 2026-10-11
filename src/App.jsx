@@ -715,7 +715,7 @@ function NuevoPedidoModal({ clientes, editPedido, onSave, onClose, onAddCliente,
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
           {[["u20", "20L"], ["u12", "12L"]].map(([field, label]) => (
             <GCard key={field} th={th} style={{ marginBottom: 0, padding: "10px 12px" }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: th.text, marginBottom: 10 }}>Bidón {label}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: th.text, marginBottom: 10 }}>Entrada {label}</div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <button onClick={() => setU(field, -1)} style={{ width: 34, height: 34, borderRadius: 9, background: "rgba(255,255,255,0.07)", border: `1px solid ${th.border}`, color: th.text, fontSize: 20, cursor: "pointer" }}>−</button>
                 <span style={{ fontSize: 24, fontWeight: 700, color: form[field] > 0 ? th.accent : th.textDim }}>{form[field] || 0}</span>
@@ -2561,7 +2561,7 @@ export default function App() {
                 {cForm.frecuenciaTipo !== "ninguna" && <>
                   <Label th={th}>Bidones estimados por visita</Label>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
-                    {[["u20Estimado", "20L"], ["u12Estimado", "12L"]].map(([field, label]) => (
+                    {[["u20Estimado", "PUERTA"], ["u12Estimado", "ANTICIPADA"]].map(([field, label]) => (
                       <div key={field} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ fontSize: 12, color: th.textMuted, minWidth: 30 }}>{label}:</span>
                         <button onClick={() => setCForm(f => ({ ...f, [field]: Math.max(0, (f[field] || 0) - 1) }))} style={{ ...btnGhost(th), padding: "4px 10px" }}>−</button>
@@ -2725,7 +2725,7 @@ export default function App() {
           {subTab === "metricas"   && <>
             <GCard th={th} style={{ marginBottom: 12 }}>
               <SectionTitle th={th}>Rentabilidad por producto</SectionTitle>
-              {[["20L", prices.p20, cv20], ["12L", prices.p12, cv12]].map(([l, p, costos]) => {
+              {[["PUERTA", prices.p20, cv20], ["ANTICIPADA", prices.p12, cv12]].map(([l, p, costos]) => {
                 const cT = costoTotal(costos);
                 const pct = p > 0 ? ((p - cT) / p) * 100 : 0;
                 return (
