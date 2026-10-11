@@ -662,13 +662,13 @@ function EntregarModal({ pedido, onConfirm, onClose, th }) {
       </GCard>
       {pedido.u20 > 0 && (
         <div onClick={() => setC20(v => !v)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", background: c20 ? "rgba(16,185,129,0.08)" : "rgba(245,158,11,0.08)", borderRadius: 12, border: `1px solid ${c20 ? "rgba(16,185,129,0.2)" : "rgba(245,158,11,0.2)"}`, marginBottom: 8, cursor: "pointer", userSelect: "none" }}>
-          <span style={{ fontSize: 13, color: th.text }}>🪣 Bidón 20L — ¿trajo el vacío?</span>
+          <span style={{ fontSize: 13, color: th.text }}>🪣 Entrada Puerta — ¿trajo el vacío?</span>
           <span style={{ fontWeight: 700, color: c20 ? "#10B981" : "#F59E0B" }}>{c20 ? "✓ Sí" : "✗ No"}</span>
         </div>
       )}
       {pedido.u12 > 0 && (
         <div onClick={() => setC12(v => !v)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", background: c12 ? "rgba(16,185,129,0.08)" : "rgba(245,158,11,0.08)", borderRadius: 12, border: `1px solid ${c12 ? "rgba(16,185,129,0.2)" : "rgba(245,158,11,0.2)"}`, marginBottom: 14, cursor: "pointer", userSelect: "none" }}>
-          <span style={{ fontSize: 13, color: th.text }}>🪣 Bidón 12L — ¿trajo el vacío?</span>
+          <span style={{ fontSize: 13, color: th.text }}>🪣 Entrada Anticipada — ¿trajo el vacío?</span>
           <span style={{ fontWeight: 700, color: c12 ? "#10B981" : "#F59E0B" }}>{c12 ? "✓ Sí" : "✗ No"}</span>
         </div>
       )}
@@ -2800,8 +2800,8 @@ export default function App() {
           <GCard th={th} style={{ marginBottom: 12 }}>
             <SectionTitle th={th}>Precios</SectionTitle>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div><Label th={th}>Bidón 20L</Label><div style={{ position: "relative" }}><span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: th.textMuted }}>$</span><input type="number" value={tmpPrices.p20} onChange={e => setTmpPrices(p => ({ ...p, p20: parseFloat(e.target.value) || 0 }))} style={{ ...inputStyle(th), paddingLeft: 24 }} /></div></div>
-              <div><Label th={th}>Bidón 12L</Label><div style={{ position: "relative" }}><span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: th.textMuted }}>$</span><input type="number" value={tmpPrices.p12} onChange={e => setTmpPrices(p => ({ ...p, p12: parseFloat(e.target.value) || 0 }))} style={{ ...inputStyle(th), paddingLeft: 24 }} /></div></div>
+              <div><Label th={th}>Entrada Puerta</Label><div style={{ position: "relative" }}><span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: th.textMuted }}>$</span><input type="number" value={tmpPrices.p20} onChange={e => setTmpPrices(p => ({ ...p, p20: parseFloat(e.target.value) || 0 }))} style={{ ...inputStyle(th), paddingLeft: 24 }} /></div></div>
+              <div><Label th={th}>Entrada Anticipada</Label><div style={{ position: "relative" }}><span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: th.textMuted }}>$</span><input type="number" value={tmpPrices.p12} onChange={e => setTmpPrices(p => ({ ...p, p12: parseFloat(e.target.value) || 0 }))} style={{ ...inputStyle(th), paddingLeft: 24 }} /></div></div>
             </div>
           </GCard>
 
