@@ -197,21 +197,21 @@ function dayTotals(day, prices) {
 function calcCierreSemanal(days, prices, cv20, cv12, fijosCats) {
   const u20 = days.reduce((a, d) => a + dayTotals(d, prices).u20, 0);
   const u12 = days.reduce((a, d) => a + dayTotals(d, prices).u12, 0);
-  const totalBidones = u20 + u12;
+  const totalENTRADAS = u20 + u12;
   const cobrado  = days.reduce((a, d) => a + dayTotals(d, prices).cobrado, 0);
   const gastosOp = days.reduce((a, d) => a + dayTotals(d, prices).gastosOp, 0);
   const gastosExt= days.reduce((a, d) => a + dayTotals(d, prices).gastosExt, 0);
   const fijosPorCat = clampArr(fijosCats).map(cat => {
     const total = days.reduce((a, d) => a + clampArr(d.gastos).filter(g => g.tipo === "fijo" && g.cat === cat.id).reduce((b, g) => b + (parseFloat(g.monto) || 0), 0), 0);
-    return { ...cat, total, porBidon: totalBidones > 0 ? total / totalBidones : 0 };
+    return { ...cat, total, porBidon: totalENTRADAS > 0 ? total / totalENTRADAS : 0 };
   }).filter(c => c.total > 0);
   const totalFijos     = fijosPorCat.reduce((a, c) => a + c.total, 0);
   const costosVarTotal = u20 * costoTotal(cv20) + u12 * costoTotal(cv12);
   const costoTotalReal = costosVarTotal + totalFijos + gastosOp;
-  const costoXBidon    = totalBidones > 0 ? costoTotalReal / totalBidones : 0;
-  const precioPromedio = totalBidones > 0 ? cobrado / totalBidones : 0;
+  const costoXBidon    = totalENTRADAS > 0 ? costoTotalReal / totalENTRADAS : 0;
+  const precioPromedio = totalENTRADAS > 0 ? cobrado / totalENTRADAS : 0;
   const utilidad       = cobrado - costoTotalReal - gastosExt;
-  return { u20, u12, totalBidones, cobrado, gastosOp, gastosExt, totalFijos, fijosPorCat, costosVarTotal, costoTotalReal, costoXBidon, precioPromedio, utilidad };
+  return { u20, u12, totalENTRADAS, cobrado, gastosOp, gastosExt, totalFijos, fijosPorCat, costosVarTotal, costoTotalReal, costoXBidon, precioPromedio, utilidad };
 }
 
 function validateBackup(data) {
@@ -711,7 +711,7 @@ function NuevoPedidoModal({ clientes, editPedido, onSave, onClose, onAddCliente,
       )}
       {form.clienteId && <div style={{ fontSize: 11, color: "#10B981", marginTop: 4 }}>✓ {form.nombre}</div>}
       <div style={{ marginTop: 12 }}>
-        <Label th={th}>Bidones</Label>
+        <Label th={th}>ENTRADAS</Label>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
           {[["u20", "PUERTA"], ["u12", "ANTICIPADA"]].map(([field, label]) => (
             <GCard key={field} th={th} style={{ marginBottom: 0, padding: "10px 12px" }}>
@@ -760,7 +760,7 @@ function SaleModal({ clientes, prices, onSave, onClose, onAddCliente, editVenta,
       )}
       {venta.clienteId && <div style={{ fontSize: 11, color: "#10B981", marginTop: 4 }}>✓ {venta.nombre}</div>}
       <div style={{ marginTop: 12 }}>
-        <Label th={th}>Bidones</Label>
+        <Label th={th}>ENTRADAS</Label>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
           {[["u20", "PUERTA", p20, "canje20"], ["u12", "ANTICIPADA", p12, "canje12"]].map(([field, label, price, cf]) => (
             <GCard key={field} th={th} style={{ marginBottom: 0, padding: "10px 12px" }}>
@@ -1106,7 +1106,7 @@ function CalendarioView({ history, prices, fiados, goalArs, th, onEditDay }) {
           {selT ? <>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
               <StatBox label="Cobrado" value={fmt(selT.cobrado)} color={th.accent} th={th} />
-              <StatBox label="Bidones" value={`${selT.u20 + selT.u12}`} color="#8B5CF6" th={th} />
+              <StatBox label="ENTRADAS" value={`${selT.u20 + selT.u12}`} color="#8B5CF6" th={th} />
               {selT.efectivo > 0 && <StatBox label="Efectivo" value={fmt(selT.efectivo)} color="#10B981" th={th} />}
               {selT.transferencia > 0 && <StatBox label="Transfer." value={fmt(selT.transferencia)} color={th.accent} th={th} />}
               {selT.fiado > 0 && <StatBox label="Fiado" value={fmt(selT.fiado)} color="#F59E0B" th={th} />}
@@ -1147,7 +1147,7 @@ function CalendarioView({ history, prices, fiados, goalArs, th, onEditDay }) {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <div style={{ fontWeight: 600, fontSize: 13, color: th.text }}>{labelDate(d.date)} {d.cierreCaja ? "🔒" : ""}</div>
-                <div style={{ fontSize: 11, color: th.textMuted }}>{d.ventas?.length || 0} ventas · {t.u20 + t.u12} bidones</div>
+                <div style={{ fontSize: 11, color: th.textMuted }}>{d.ventas?.length || 0} ventas · {t.u20 + t.u12} ENTRADAS</div>
                 {t.fiado > 0 && <div style={{ fontSize: 11, color: "#F59E0B" }}>📋 Fiados: {fmt(t.fiado)}</div>}
               </div>
               <div style={{ textAlign: "right" }}>
@@ -1240,12 +1240,12 @@ function ClienteChartView({ cliente, history, prices, fiados, th, onClose }) {
   }, [ventasCliente]);
 
   const totalCompras  = ventasCliente.reduce((a,v) => a + v.monto, 0);
-  const totalBidones  = ventasCliente.reduce((a,v) => a + v.u20 + v.u12, 0);
+  const totalENTRADAS  = ventasCliente.reduce((a,v) => a + v.u20 + v.u12, 0);
   const totalVisitas  = ventasCliente.length;
   const fiadosPend    = clampArr(fiados).filter(f => f.clienteId === cliente.id && !f.cobrado).reduce((a,f) => a + f.monto, 0);
   const ultimaCompra  = ventasCliente.length ? ventasCliente[ventasCliente.length-1].date : null;
   const maxMonto      = Math.max(...porMes.map(m => m.monto), 1);
-  const maxBidones    = Math.max(...porMes.map(m => m.u20 + m.u12), 1);
+  const maxENTRADAS    = Math.max(...porMes.map(m => m.u20 + m.u12), 1);
 
   const mesLabel = iso => new Date(iso + "-15").toLocaleDateString("es-AR", { month: "short" });
 
@@ -1263,7 +1263,7 @@ function ClienteChartView({ cliente, history, prices, fiados, th, onClose }) {
         {/* Stats resumen */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
           <StatBox label="Total compras" value={fmt(totalCompras)} color={th.accent} th={th} />
-          <StatBox label="Bidones totales" value={totalBidones} color="#8B5CF6" th={th} />
+          <StatBox label="ENTRADAS totales" value={totalENTRADAS} color="#8B5CF6" th={th} />
           <StatBox label="Visitas totales" value={totalVisitas} color="#10B981" th={th} />
           {fiadosPend > 0
             ? <StatBox label="Fiado pendiente" value={fmt(fiadosPend)} color="#F59E0B" th={th} />
@@ -1274,13 +1274,13 @@ function ClienteChartView({ cliente, history, prices, fiados, th, onClose }) {
         {porMes.length === 0 && <Empty icon="📊" text="Sin compras registradas" th={th} />}
 
         {porMes.length > 0 && <>
-          {/* Chart bidones por mes */}
+          {/* Chart ENTRADAS por mes */}
           <GCard th={th} style={{ marginBottom: 12 }}>
-            <SectionTitle th={th}>Bidones por mes</SectionTitle>
+            <SectionTitle th={th}>ENTRADAS por mes</SectionTitle>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 90, marginBottom: 6 }}>
               {porMes.map(m => {
                 const tot = m.u20 + m.u12;
-                const h   = Math.max((tot / maxBidones) * 80, 4);
+                const h   = Math.max((tot / maxENTRADAS) * 80, 4);
                 return (
                   <div key={m.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
                     <div style={{ fontSize: 9, color: th.accent, fontWeight: 700 }}>{tot}</div>
@@ -1621,7 +1621,7 @@ export default function App() {
   const [nuevoPedidoModal, setNuevoPedidoModal]= useState(null);
   const [entregarModal,    setEntregarModal]   = useState(null);
   const [cierreCajaModal,  setCierreCajaModal] = useState(false);
-  const [showBidones,      setShowBidones]     = useState(false);
+  const [showENTRADAS,      setShowENTRADAS]     = useState(false);
   const [dragIdx,          setDragIdx]         = useState(null);
   const [cliSearch,        setCliSearch]       = useState("");
   const [cliZoneFilter,    setCliZoneFilter]   = useState("todas");
@@ -1789,9 +1789,9 @@ export default function App() {
       if (!canje12 && (pedido.u12 || 0) > 0) deudas.push({ tipo: "ANTICIPADA", cant: pedido.u12 });
       newClientes = clientes.map(c => {
         if (c.id !== pedido.clienteId) return c;
-        const bd = [...clampArr(c.bidonesDeben)];
+        const bd = [...clampArr(c.ENTRADASDeben)];
         deudas.forEach(d => { const ex = bd.find(b => b.tipo === d.tipo); if (ex) ex.cant += d.cant; else bd.push({ ...d }); });
-        return { ...c, bidonesDeben: bd, ultimaVisita: hoy, visitas: (c.visitas || 0) + 1, notaUltimaVisita: nota || c.notaUltimaVisita };
+        return { ...c, ENTRADASDeben: bd, ultimaVisita: hoy, visitas: (c.visitas || 0) + 1, notaUltimaVisita: nota || c.notaUltimaVisita };
       });
       setClientes(newClientes);
     }
@@ -1832,7 +1832,7 @@ export default function App() {
     if (!venta.canje12 && (venta.u12 || 0) > 0) deudas.push({ tipo: "ANTICIPADA", cant: venta.u12 });
     let newClientes = clientes;
     if (deudas.length && venta.clienteId) {
-      newClientes = clientes.map(c => { if (c.id !== venta.clienteId) return c; const bd = [...clampArr(c.bidonesDeben)]; deudas.forEach(d => { const ex = bd.find(b => b.tipo === d.tipo); if (ex) ex.cant += d.cant; else bd.push({ ...d }); }); return { ...c, bidonesDeben: bd }; });
+      newClientes = clientes.map(c => { if (c.id !== venta.clienteId) return c; const bd = [...clampArr(c.ENTRADASDeben)]; deudas.forEach(d => { const ex = bd.find(b => b.tipo === d.tipo); if (ex) ex.cant += d.cant; else bd.push({ ...d }); }); return { ...c, ENTRADASDeben: bd }; });
       setClientes(newClientes);
     }
 
@@ -1877,7 +1877,7 @@ export default function App() {
 
   // ── CLIENTES ──
   const handleAddClienteFromModal = useCallback(async (nombre, setFormFn, setQuery) => {
-    const nuevo = { id: uid(), nombre, tel: "", direccion: "", nota: "", bidonesDeben: [], estado: "activo", frecuenciaTipo: "ninguna", frecuenciaDias: 7, diasSemana: [], visitas: 0, zona: "" };
+    const nuevo = { id: uid(), nombre, tel: "", direccion: "", nota: "", ENTRADASDeben: [], estado: "activo", frecuenciaTipo: "ninguna", frecuenciaDias: 7, diasSemana: [], visitas: 0, zona: "" };
     const nc = [...clientes, nuevo]; setClientes(nc); await sset("clientes_v1", nc);
     setFormFn(v => ({ ...v, clienteId: nuevo.id, nombre: nuevo.nombre, direccion: "" }));
     setQuery && setQuery(nuevo.nombre);
@@ -1911,10 +1911,10 @@ export default function App() {
 
   const saveCliente = useCallback(async () => {
     if (!cForm.nombre) return;
-    const base = { ...cForm, bidonesDeben: editingCli ? (clientes.find(c => c.id === editingCli)?.bidonesDeben || []) : [] };
+    const base = { ...cForm, ENTRADASDeben: editingCli ? (clientes.find(c => c.id === editingCli)?.ENTRADASDeben || []) : [] };
     const nc = editingCli
       ? clientes.map(c => c.id === editingCli ? { ...c, ...base } : c)
-      : [...clientes, { id: uid(), ...base, visitas: 0, bidonesDeben: [] }];
+      : [...clientes, { id: uid(), ...base, visitas: 0, ENTRADASDeben: [] }];
     setClientes(nc); await sset("clientes_v1", nc);
     setCForm(EMPTY_CLI_FORM); setEditingCli(null);
     showToast(editingCli ? "✅ Cliente actualizado" : "👤 Cliente agregado");
@@ -1928,7 +1928,7 @@ export default function App() {
   }, [clientes, askConfirm, showToast]);
 
   const devolverBidon = useCallback(async (clienteId, tipo) => {
-    const nc = clientes.map(c => { if (c.id !== clienteId) return c; const bd = clampArr(c.bidonesDeben).map(b => b.tipo === tipo ? { ...b, cant: Math.max(0, b.cant - 1) } : b).filter(b => b.cant > 0); return { ...c, bidonesDeben: bd }; });
+    const nc = clientes.map(c => { if (c.id !== clienteId) return c; const bd = clampArr(c.ENTRADASDeben).map(b => b.tipo === tipo ? { ...b, cant: Math.max(0, b.cant - 1) } : b).filter(b => b.cant > 0); return { ...c, ENTRADASDeben: bd }; });
     setClientes(nc); await sset("clientes_v1", nc); showToast("✅ ENTRADA devuelto");
   }, [clientes, showToast]);
 
@@ -2006,11 +2006,11 @@ export default function App() {
     clientes.filter(c => { try { return tocaHoy(c) && c.estado !== "perdido"; } catch { return false; } }),
     [clientes]
   );
-  const bidonesSinDevolver = useMemo(() =>
-    clientes.flatMap(c => clampArr(c.bidonesDeben).filter(b => b.cant > 0).map(b => ({ ...b, nombre: String(c.nombre || ""), clienteId: c.id }))),
+  const ENTRADASSinDevolver = useMemo(() =>
+    clientes.flatMap(c => clampArr(c.ENTRADASDeben).filter(b => b.cant > 0).map(b => ({ ...b, nombre: String(c.nombre || ""), clienteId: c.id }))),
     [clientes]
   );
-  const totalSinDevolver = useMemo(() => bidonesSinDevolver.reduce((a, b) => a + b.cant, 0), [bidonesSinDevolver]);
+  const totalSinDevolver = useMemo(() => ENTRADASSinDevolver.reduce((a, b) => a + b.cant, 0), [ENTRADASSinDevolver]);
   const fiadosPendTotal  = useMemo(() => fiados.filter(f => !f.cobrado).reduce((a, f) => a + f.monto, 0), [fiados]);
   const cierreSemana     = useMemo(() => calcCierreSemanal(history.filter(d => d.date >= ws), prices, cv20, cv12, fijosCats), [history, ws, prices, cv20, cv12, fijosCats]);
   const cierreMes        = useMemo(() => {
@@ -2130,16 +2130,16 @@ export default function App() {
         </div>
       )}
 
-      {/* BIDONES OVERLAY */}
-      {showBidones && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => setShowBidones(false)}>
+      {/* ENTRADAS OVERLAY */}
+      {showENTRADAS && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => setShowENTRADAS(false)}>
           <div style={{ ...glassCard(th), maxWidth: 380, width: "100%", padding: 24 }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: th.text }}>🪣 Bidones sin devolver</div>
-              <button onClick={() => setShowBidones(false)} style={{ ...btnGhost(th), padding: "3px 10px" }}>✕</button>
+              <div style={{ fontSize: 15, fontWeight: 700, color: th.text }}>🪣 ENTRADAS sin devolver</div>
+              <button onClick={() => setShowENTRADAS(false)} style={{ ...btnGhost(th), padding: "3px 10px" }}>✕</button>
             </div>
-            {bidonesSinDevolver.length === 0 ? <div style={{ color: th.textMuted, fontSize: 13 }}>Todos devueltos ✅</div> :
-              bidonesSinDevolver.map((b, i) => (
+            {ENTRADASSinDevolver.length === 0 ? <div style={{ color: th.textMuted, fontSize: 13 }}>Todos devueltos ✅</div> :
+              ENTRADASSinDevolver.map((b, i) => (
                 <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", marginBottom: 8, background: "rgba(239,68,68,0.08)", borderRadius: 11, border: "1px solid rgba(239,68,68,0.2)" }}>
                   <div><div style={{ fontSize: 13, fontWeight: 600, color: th.text }}>{b.nombre}</div><div style={{ fontSize: 12, color: "#ef4444" }}>{b.cant}× {b.tipo}</div></div>
                   <button onClick={() => devolverBidon(b.clienteId, b.tipo)} style={{ fontSize: 12, padding: "5px 10px", background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: 8, color: "#10B981", cursor: "pointer" }}>Devolvió 1</button>
@@ -2159,7 +2159,7 @@ export default function App() {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {totalSinDevolver > 0 && <button onClick={() => { feedback.tap(); setShowBidones(true); }} className="bw-press" style={{ background: "rgba(251,113,133,0.15)", border: "1px solid rgba(251,113,133,0.32)", borderRadius: 20, padding: "5px 12px", color: "#fb7185", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>🪣 {totalSinDevolver}</button>}
+          {totalSinDevolver > 0 && <button onClick={() => { feedback.tap(); setShowENTRADAS(true); }} className="bw-press" style={{ background: "rgba(251,113,133,0.15)", border: "1px solid rgba(251,113,133,0.32)", borderRadius: 20, padding: "5px 12px", color: "#fb7185", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>🪣 {totalSinDevolver}</button>}
           {fiadosPendTotal > 0 && <div style={{ textAlign: "right" }}><div style={{ fontSize: 9, color: th.textMuted, fontWeight: 600 }}>Fiados</div><div style={{ color: "#fbbf24", fontWeight: 800, fontSize: 12 }}>{fmt(fiadosPendTotal)}</div></div>}
           {cierreSemana.cobrado > 0 && <div style={{ textAlign: "right" }}><div style={{ fontSize: 9, color: th.textMuted, fontWeight: 600 }}>Semana</div><div style={{ color: th.accent, fontWeight: 800, fontSize: 13 }}>{fmt(cierreSemana.cobrado)}</div></div>}
           <button onClick={async () => { feedback.tap(); const nd = !darkMode; setDarkMode(nd); await sset("darkMode", nd); }} className="bw-press" style={{ ...btnGhost(th), padding: "7px 11px", fontSize: 15 }}>{darkMode ? "☀️" : "🌙"}</button>
@@ -2179,7 +2179,7 @@ export default function App() {
               style={{ background: `linear-gradient(135deg,${th.accent}26,${th.accent}0a)`, border: `1px solid ${th.accent}40`, borderRadius: 18, padding: "16px 17px", cursor: "pointer", position: "relative", overflow: "hidden", boxShadow: `0 4px 20px ${th.accent}18` }}>
               <div style={{ fontSize: 10, color: th.textMuted, textTransform: "uppercase", fontWeight: 700, marginBottom: 5, letterSpacing: "0.06em" }}>Cobrado hoy</div>
               <div style={{ fontSize: 26, fontWeight: 800, color: th.accent, letterSpacing: "-0.03em" }}>{fmt(todayT.cobrado)}</div>
-              <div style={{ fontSize: 10, color: th.textMuted, marginTop: 3, fontWeight: 500 }}>{todayT.u20 + todayT.u12} bidones · {today.ventas?.length || 0} ventas</div>
+              <div style={{ fontSize: 10, color: th.textMuted, marginTop: 3, fontWeight: 500 }}>{todayT.u20 + todayT.u12} ENTRADAS · {today.ventas?.length || 0} ventas</div>
               <PBar pct={goalProgress} a={th.accent} b="#22d3ee" style={{ marginTop: 10 }} />
               <div style={{ fontSize: 9, color: th.textMuted, marginTop: 4, fontWeight: 500 }}>Meta: {fmt(goalArs)} · {Math.round(goalProgress)}%</div>
               {today.cierreCaja && <div style={{ position: "absolute", top: 10, right: 12, fontSize: 15 }}>🔒</div>}
@@ -2221,9 +2221,9 @@ export default function App() {
           {/* ── WIDGET: Alerta de gastos ── */}
           {gastoAlert && <div onClick={() => { setMainTab("finanzas"); setSubTab("gastos"); }} style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 12, padding: "10px 14px", marginBottom: 12, fontSize: 13, color: "#fca5a5", cursor: "pointer" }}>⚠️ Gastos ({Math.round((todayT.gastos / todayT.cobrado) * 100)}%) superan el {alertPct}% — tocá para ver</div>}
 
-          {/* ── WIDGET: Bidones sin devolver ── */}
+          {/* ── WIDGET: ENTRADAS sin devolver ── */}
           {totalSinDevolver > 0 && (
-            <div onClick={() => setShowBidones(true)} style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 13, padding: "10px 14px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+            <div onClick={() => setShowENTRADAS(true)} style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 13, padding: "10px 14px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
               <div style={{ fontSize: 13, color: "#fca5a5", fontWeight: 600 }}>🪣 {totalSinDevolver} ENTRADA{totalSinDevolver !== 1 ? "es" : ""} sin devolver</div>
               <div style={{ fontSize: 11, color: "#ef4444" }}>Ver →</div>
             </div>
@@ -2472,7 +2472,7 @@ export default function App() {
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 14, color: th.text }}>{labelDate(d.date)} {d.cierreCaja ? "🔒" : ""}</div>
-                      <div style={{ fontSize: 11, color: th.textMuted }}>{d.ventas?.length || 0} ventas · {t.u20 + t.u12} bidones</div>
+                      <div style={{ fontSize: 11, color: th.textMuted }}>{d.ventas?.length || 0} ventas · {t.u20 + t.u12} ENTRADAS</div>
                       {t.fiado > 0 && <div style={{ fontSize: 11, color: "#F59E0B" }}>📋 Fiados: {fmt(t.fiado)}</div>}
                     </div>
                     <div style={{ textAlign: "right" }}>
@@ -2559,7 +2559,7 @@ export default function App() {
                   </div>
                 )}
                 {cForm.frecuenciaTipo !== "ninguna" && <>
-                  <Label th={th}>Bidones estimados por visita</Label>
+                  <Label th={th}>ENTRADAS estimados por visita</Label>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
                     {[["u20Estimado", "PUERTA"], ["u12Estimado", "ANTICIPADA"]].map(([field, label]) => (
                       <div key={field} style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -2598,7 +2598,7 @@ export default function App() {
           {clientesFiltrados.map(c => {
             const estado       = ESTADOS_CLIENTE.find(e => e.id === (c.estado || "activo")) || ESTADOS_CLIENTE[0];
             const fiadosPend   = fiados.filter(f => f.clienteId === c.id && !f.cobrado).reduce((a, f) => a + f.monto, 0);
-            const bidonesDeben = clampArr(c.bidonesDeben).filter(b => b.cant > 0);
+            const ENTRADASDeben = clampArr(c.ENTRADASDeben).filter(b => b.cant > 0);
             const prox         = proximaVisita(c);
             const diasProx     = prox ? diffDays(todayKey(), prox) : null;
             const totalCompras = history.reduce((a, d) => { const vs = clampArr(d.ventas).filter(v => v.clienteId === c.id && !v.montoManual && v.pago !== "fiado"); return a + vs.reduce((b, v) => b + (v.u20 || 0) * prices.p20 + (v.u12 || 0) * prices.p12, 0); }, 0);
@@ -2635,14 +2635,14 @@ export default function App() {
                     <button onClick={() => deleteCliente(c.id)} style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)", borderRadius: 8, color: "#ef4444", cursor: "pointer", padding: "4px 9px", fontSize: 13 }}>🗑️</button>
                   </div>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: bidonesDeben.length > 0 ? 10 : 0 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: ENTRADASDeben.length > 0 ? 10 : 0 }}>
                   <div style={{ padding: "8px 10px", background: `${th.accent}0d`, borderRadius: 9 }}><div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase" }}>Compras totales</div><div style={{ fontWeight: 600, color: th.accent, fontSize: 13 }}>{totalCompras > 0 ? fmt(totalCompras) : "—"}</div></div>
                   <div style={{ padding: "8px 10px", background: fiadosPend > 0 ? "rgba(245,158,11,0.1)" : "rgba(255,255,255,0.04)", borderRadius: 9 }}><div style={{ fontSize: 9, color: th.textMuted, textTransform: "uppercase" }}>Fiado pend.</div><div style={{ fontWeight: 600, color: fiadosPend > 0 ? "#F59E0B" : th.textDim, fontSize: 13 }}>{fiadosPend > 0 ? fmt(fiadosPend) : "—"}</div></div>
                 </div>
-                {bidonesDeben.length > 0 && (
+                {ENTRADASDeben.length > 0 && (
                   <div style={{ padding: "9px 11px", background: "rgba(239,68,68,0.08)", borderRadius: 9, border: "1px solid rgba(239,68,68,0.2)" }}>
-                    <div style={{ fontSize: 10, color: "#ef4444", marginBottom: 5 }}>🪣 Bidones que debe</div>
-                    {bidonesDeben.map(b => (
+                    <div style={{ fontSize: 10, color: "#ef4444", marginBottom: 5 }}>🪣 ENTRADAS que debe</div>
+                    {ENTRADASDeben.map(b => (
                       <div key={b.tipo} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                         <span style={{ fontSize: 12, color: th.text }}>{b.cant}× ENTRADA {b.tipo}</span>
                         <button onClick={() => devolverBidon(c.id, b.tipo)} style={{ fontSize: 11, padding: "3px 9px", background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: 7, color: "#10B981", cursor: "pointer" }}>Devolvió 1</button>
@@ -2705,7 +2705,7 @@ export default function App() {
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 14, color: th.text }}>{labelDate(d.date)} {d.cierreCaja ? "🔒" : ""}</div>
-                      <div style={{ fontSize: 11, color: th.textMuted }}>{d.ventas?.length || 0} ventas · {t.u20 + t.u12} bidones</div>
+                      <div style={{ fontSize: 11, color: th.textMuted }}>{d.ventas?.length || 0} ventas · {t.u20 + t.u12} ENTRADAS</div>
                       {t.fiado > 0 && <div style={{ fontSize: 11, color: "#F59E0B" }}>📋 Fiados: {fmt(t.fiado)}</div>}
                     </div>
                     <div style={{ textAlign: "right" }}>
