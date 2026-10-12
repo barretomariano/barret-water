@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// BARRET WATER — firebase-messaging-sw.js v4
+// ENTRADAS — firebase-messaging-sw.js v5
 // FCM (Android/Chrome) + Web Push nativo (iOS PWA)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -19,7 +19,7 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // ── CACHE offline básico ───────────────────────────────────────────────────────
-const CACHE_NAME = "barret-water-v4";
+const CACHE_NAME = "entradas-v1";
 const PRECACHE   = ["/", "/index.html"];
 
 self.addEventListener("install", event => {
@@ -66,7 +66,7 @@ self.addEventListener("push", event => {
   let data = {};
   try { data = event.data.json(); } catch { data = { title: event.data.text() }; }
 
-  const title = data.title || "Barret Water 💧";
+  const title = data.title || "Entradas 🎟️";
   const body  = data.body  || "";
 
   event.waitUntil(
@@ -74,7 +74,7 @@ self.addEventListener("push", event => {
       body,
       icon:     data.icon || "/icon-192.png",
       badge:    "/icon-192.png",
-      tag:      "bw-ios-push",
+      tag:      "ev-ios-push",
       renotify: true,
       vibrate:  [200, 100, 200],
       data:     { url: data.url || "/" },
@@ -86,14 +86,14 @@ self.addEventListener("push", event => {
 messaging.onBackgroundMessage(payload => {
   const notif = payload.notification || {};
   const data  = payload.data || {};
-  const title = notif.title || data.title || "Barret Water 💧";
+  const title = notif.title || data.title || "Entradas 🎟️";
   const body  = notif.body  || data.body  || "";
 
   self.registration.showNotification(title, {
     body,
     icon:     notif.icon || "/icon-192.png",
     badge:    "/icon-192.png",
-    tag:      "bw-notif",
+    tag:      "ev-notif",
     renotify: true,
     vibrate:  [200, 100, 200],
     data:     { url: data.url || "/" },
@@ -120,11 +120,11 @@ self.addEventListener("message", event => {
   if (!event.data) return;
   if (event.data.type === "SHOW_NOTIFICATION") {
     const { title, body, icon, tag, url } = event.data;
-    self.registration.showNotification(title || "Barret Water 💧", {
+    self.registration.showNotification(title || "Entradas 🎟️", {
       body:     body || "",
       icon:     icon || "/icon-192.png",
       badge:    "/icon-192.png",
-      tag:      tag  || "bw-foreground",
+      tag:      tag  || "ev-foreground",
       renotify: true,
       vibrate:  [100, 50, 100],
       data:     { url: url || "/" },

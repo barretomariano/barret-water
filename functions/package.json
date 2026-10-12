@@ -1,7 +1,7 @@
 {
-  "name": "barret-water-functions",
+  "name": "entradas-functions",
   "version": "1.0.0",
-  "description": "Barret Water Cloud Functions — FCM + iOS Web Push",
+  "description": "Entradas — Cloud Functions (avisos push FCM + iOS Web Push)",
   "engines": { "node": "20" },
   "main": "index.js",
   "scripts": {
