@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// ENTRADAS — firebase-messaging-sw.js v5
+// EVENTOS — firebase-messaging-sw.js v6
 // FCM (Android/Chrome) + Web Push nativo (iOS PWA)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -19,7 +19,7 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // ── CACHE offline básico ───────────────────────────────────────────────────────
-const CACHE_NAME = "entradas-v1";
+const CACHE_NAME = "eventos-v2";
 const PRECACHE   = ["/", "/index.html"];
 
 self.addEventListener("install", event => {
@@ -66,7 +66,7 @@ self.addEventListener("push", event => {
   let data = {};
   try { data = event.data.json(); } catch { data = { title: event.data.text() }; }
 
-  const title = data.title || "Entradas 🎟️";
+  const title = data.title || "Eventos 🎟️";
   const body  = data.body  || "";
 
   event.waitUntil(
@@ -86,7 +86,7 @@ self.addEventListener("push", event => {
 messaging.onBackgroundMessage(payload => {
   const notif = payload.notification || {};
   const data  = payload.data || {};
-  const title = notif.title || data.title || "Entradas 🎟️";
+  const title = notif.title || data.title || "Eventos 🎟️";
   const body  = notif.body  || data.body  || "";
 
   self.registration.showNotification(title, {
@@ -120,7 +120,7 @@ self.addEventListener("message", event => {
   if (!event.data) return;
   if (event.data.type === "SHOW_NOTIFICATION") {
     const { title, body, icon, tag, url } = event.data;
-    self.registration.showNotification(title || "Entradas 🎟️", {
+    self.registration.showNotification(title || "Eventos 🎟️", {
       body:     body || "",
       icon:     icon || "/icon-192.png",
       badge:    "/icon-192.png",

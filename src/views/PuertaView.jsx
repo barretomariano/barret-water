@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { api } from "../data";
 import { feedback } from "../feedback";
 import { fmtNum, hourOf, timeLabel } from "../utils";
@@ -28,6 +28,23 @@ export default function PuertaView({ evento, r, log, locked }) {
     if (delta > 0) { if (r.aforo > 0 && n + delta === r.aforo) feedback.full(); else feedback.door(); } else feedback.doorUndo();
   };
 
+  // Atajos de teclado para el mostrador (Mac/PC): Espacio, Enter, + o ↑ suma · − o ↓ resta.
+  // Se ignoran mientras se escribe en un campo o hay una ventana abierta.
+  const tocarRef = useRef(tocar);
+  tocarRef.current = tocar;
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+      const tag = e.target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || document.querySelector(".backdrop")) return;
+      const nativo = tag === "BUTTON" || tag === "A"; // Espacio/Enter ya activan el botón enfocado
+      if (e.key === "+" || e.key === "ArrowUp" || (!nativo && (e.key === " " || e.key === "Enter"))) { e.preventDefault(); tocarRef.current(1); }
+      else if (e.key === "-" || e.key === "ArrowDown") { e.preventDefault(); tocarRef.current(-1); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
   // Flujo de ingreso por hora (hora Argentina), en orden cronológico.
   const flow = useMemo(() => {
     const m = new Map();
@@ -42,6 +59,8 @@ export default function PuertaView({ evento, r, log, locked }) {
       {locked && <div className="banner info">🔒 Evento cerrado: el contador está bloqueado.</div>}
       {lleno && <div className="banner bad">🚫 <b>Aforo completo</b> ({fmtNum(r.aforo)}). {n > r.aforo && `Hay ${n - r.aforo} personas de más.`}</div>}
 
+      <div className="cols">
+      <div className="col">
       <div className="card" style={{ paddingTop: 20, paddingBottom: 20 }}>
         <div className={`door-count${lleno ? " full" : ""}`} aria-live="polite">{fmtNum(n)}</div>
         <div className="hero"><div className="cap" style={{ textAlign: "center", color: "var(--accent2)", fontSize: 12, fontWeight: 800, letterSpacing: ".14em", textTransform: "uppercase", marginTop: 6 }}>
@@ -55,6 +74,10 @@ export default function PuertaView({ evento, r, log, locked }) {
         <button disabled={locked} onClick={() => tocar(5)}>+5</button>
       </div>
 
+      <div className="kbd-hint">⌨️ Teclado: <kbd>Espacio</kbd> o <kbd>+</kbd> suma · <kbd>−</kbd> resta</div>
+
+      </div>
+      <div className="col">
       <div className="sec">Control de ingreso</div>
       <div className="card">
         <div className="bar-row" style={{ marginTop: 0 }}>
@@ -95,6 +118,8 @@ export default function PuertaView({ evento, r, log, locked }) {
           </div>
         </>
       )}
+      </div>
+      </div>
     </>
   );
 }

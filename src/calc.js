@@ -102,12 +102,16 @@ export function resumenEvento(evento, ventasRaw, gastosRaw, ingresos = 0) {
   const base = Math.max(0, neto);
   const reparto = socios.map((s) => ({ id: s.id, nombre: s.nombre, pct: n(s.pct), monto: Math.round((base * n(s.pct)) / 100) }));
 
+  const cajaEfectivo = efectivo - gastosEfectivo;
+  const arqueo = evento?.arqueoEfectivo === null || evento?.arqueoEfectivo === undefined ? null : n(evento.arqueoEfectivo);
+
   return {
     entradas, entradasPagas, cortesias, anuladas: ventas.length - activas.length, cantVentas: activas.length, pendientes,
     facturado, cobrado, efectivo, transferencia, porCobrar, sobrepago,
     gastosTotal, gastosEfectivo, gastosTransferencia, gastosPorCat,
-    cajaEfectivo: efectivo - gastosEfectivo,
+    cajaEfectivo,
     cajaCuenta: transferencia - gastosTransferencia,
+    arqueo, arqueoDif: arqueo === null ? 0 : arqueo - cajaEfectivo,
     neto, netoProyectado,
     ticketPromedio: entradasPagas > 0 ? facturado / entradasPagas : 0,
     aforo, ocupacion: aforo > 0 ? entradas / aforo : 0,
@@ -118,24 +122,47 @@ export function resumenEvento(evento, ventasRaw, gastosRaw, ingresos = 0) {
   };
 }
 
-// Texto listo para pegar en WhatsApp.
+// Resumen ÚNICO del evento, pensado para WhatsApp: entradas, ingresos (ventas), egresos (gastos) y resultado.
+// `fmt` se inyecta para poder mostrar una vista con montos ocultos sin duplicar la lógica.
 export function textoResumen(evento, r, fmt, fechaLabel) {
   const L = [];
   L.push(`🎟️ *${evento.nombre}*${fechaLabel ? ` — ${fechaLabel}` : ""}`);
   if (evento.lugar) L.push(`📍 ${evento.lugar}`);
-  L.push("");
-  L.push(`Entradas vendidas: *${r.entradas}*${r.aforo ? ` de ${r.aforo}` : ""}${r.cortesias ? ` (${r.cortesias} cortesías)` : ""}`);
-  L.push(`Ingresaron: *${r.ingresos}*`);
-  r.porTier.forEach((t) => L.push(`  • ${t.nombre}: ${t.cantidad} → ${fmt(t.facturado)}`));
-  L.push("");
+  if (evento.estado === "cerrado") L.push("🔒 Evento cerrado");
+
+  L.push("", "🎫 *ENTRADAS*");
+  L.push(`Vendidas: *${r.entradas}*${r.aforo ? ` de ${r.aforo}` : ""}${r.cortesias ? ` (${r.cortesias} cortesías)` : ""}`);
+  L.push(`Ingresaron: *${r.ingresos}*${r.faltanIngresar > 0 ? ` · faltan ${r.faltanIngresar}` : ""}`);
+  if (r.anuladas > 0) L.push(`Ventas anuladas: ${r.anuladas}`);
+
+  L.push("", "💰 *INGRESOS (ventas)*");
+  if (r.porTier.length === 0) L.push("Sin ventas cargadas");
+  r.porTier.forEach((t) => L.push(`• ${t.nombre}: ${t.cantidad} → ${fmt(t.facturado)}`));
+  L.push(`Total vendido: ${fmt(r.facturado)}`);
   L.push(`Cobrado: *${fmt(r.cobrado)}*  (💵 ${fmt(r.efectivo)} · 🏦 ${fmt(r.transferencia)})`);
-  if (r.porCobrar > 0) L.push(`Por cobrar: ${fmt(r.porCobrar)} (${r.pendientes} ventas)`);
-  L.push(`Gastos: ${fmt(r.gastosTotal)}`);
-  L.push(`*Neto: ${fmt(r.neto)}*`);
+  if (r.porCobrar > 0) L.push(`Por cobrar: ${fmt(r.porCobrar)} (${r.pendientes} ${r.pendientes === 1 ? "venta" : "ventas"})`);
+
+  L.push("", "🧾 *EGRESOS (gastos)*");
+  const cats = Object.values(r.gastosPorCat).sort((a, b) => b.total - a.total);
+  if (cats.length === 0) L.push("Sin gastos cargados");
+  cats.forEach((c) => { const cat = GASTO_CATS.find((x) => x.id === c.id); L.push(`• ${cat?.icon || "📦"} ${cat?.label || c.id}: ${fmt(c.total)}`); });
+  L.push(`Total gastos: *${fmt(r.gastosTotal)}*  (💵 ${fmt(r.gastosEfectivo)} · 🏦 ${fmt(r.gastosTransferencia)})`);
+
+  L.push("", "📊 *RESULTADO*");
+  L.push(`*Neto: ${fmt(r.neto)}*  (cobrado − gastos)`);
+  if (r.porCobrar > 0) L.push(`Si se cobra todo: ${fmt(r.netoProyectado)}`);
+  L.push(`💵 Caja en efectivo: ${fmt(r.cajaEfectivo)}`);
+  L.push(`🏦 En cuenta: ${fmt(r.cajaCuenta)}`);
+  if (r.arqueo !== null) L.push(`🧮 Efectivo contado: ${fmt(r.arqueo)}${r.arqueoDif === 0 ? " ✅ cuadra" : ` (${r.arqueoDif > 0 ? "sobran" : "faltan"} ${fmt(Math.abs(r.arqueoDif))})`}`);
+
+  const vendedores = r.porVendedor.filter((v) => v.nombre !== "Sin asignar");
+  if (vendedores.length) {
+    L.push("", "🧑‍💼 *POR VENDEDOR*");
+    vendedores.forEach((v) => L.push(`• ${v.nombre}: ${v.cantidad} entradas · cobró ${fmt(v.cobrado)}${v.porCobrar > 0 ? ` · debe ${fmt(v.porCobrar)}` : ""}`));
+  }
   if (r.reparto.length) {
-    L.push("");
-    L.push("Reparto:");
-    r.reparto.forEach((s) => L.push(`  • ${s.nombre} (${s.pct}%): ${fmt(s.monto)}`));
+    L.push("", "👥 *REPARTO DEL NETO*");
+    r.reparto.forEach((s) => L.push(`• ${s.nombre} (${s.pct}%): ${fmt(s.monto)}`));
   }
   return L.join("\n");
 }

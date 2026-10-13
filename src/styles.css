@@ -1,4 +1,4 @@
-/* ───────────── Entradas · CRM de eventos nocturnos ───────────── */
+/* ───────────── Eventos · CRM de eventos nocturnos ───────────── */
 :root { color-scheme: dark; }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html { -webkit-text-size-adjust: 100%; }
@@ -181,3 +181,100 @@ button { cursor: pointer; border: 0; background: none; }
 .hr { height: 1px; background: var(--line); margin: 14px 0; }
 .link { color: var(--accent2); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* ── Privacidad (ocultar montos) ── */
+.privacy { flex: none; display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 10px; border-radius: 99px; background: var(--card); border: 1px solid var(--line); color: var(--muted); font-size: 11px; font-weight: 800; transition: background .15s, border-color .15s, color .15s; }
+.privacy span { font-size: 15px; line-height: 1; }
+.privacy b { display: none; font-weight: 800; }
+.privacy.on { color: var(--text); background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: var(--accent); box-shadow: 0 0 14px var(--glow); }
+.privacy:active { transform: scale(.95); }
+.topbar { flex-wrap: nowrap; }
+.topbar .brand { flex: 1; }
+
+/* ── Columnas (en celular se apilan; en pantallas grandes se reparten) ── */
+.cols { display: block; }
+.col { min-width: 0; }
+.list-grid { display: block; }
+
+/* ── Resumen de WhatsApp ── */
+.resumen { white-space: pre-wrap; word-break: break-word; font-family: inherit; font-size: 13px; line-height: 1.55; color: var(--text); background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 12px; max-height: 340px; overflow-y: auto; }
+.btn.wa { width: 100%; text-decoration: none; color: #04210f; background: linear-gradient(135deg, #25d366, #1faa59); box-shadow: 0 8px 26px rgba(37, 211, 102, .28), inset 0 1px 0 rgba(255,255,255,.35); }
+a.btn { text-decoration: none; }
+.kbd-hint { display: none; margin-top: 12px; text-align: center; font-size: 12px; color: var(--muted); }
+kbd { font-family: inherit; font-weight: 800; font-size: 11px; padding: 2px 7px; border-radius: 6px; background: var(--card2); border: 1px solid var(--line); color: var(--text); }
+
+/* ───────────── Pantallas medianas (tablet): más aire ───────────── */
+@media (min-width: 700px) {
+  .shell { max-width: 760px; padding-left: 24px; padding-right: 24px; }
+  .nav-in { max-width: 760px; }
+  .fab { right: max(18px, calc(50% - 356px)); }
+  .privacy b { display: inline; }
+}
+
+/* ───────────── Escritorio / Mac en el mostrador ─────────────
+   Barra lateral fija, contenido a lo ancho en dos columnas, textos y botones más grandes,
+   ventanas centradas en vez de pegadas abajo. */
+@media (min-width: 1000px) {
+  .app { padding-left: 232px; }
+  .shell { max-width: 1480px; padding: 26px 40px 48px; }
+
+  .nav { top: 0; right: auto; bottom: 0; width: 232px; border-top: 0; border-right: 1px solid var(--line); padding: 28px 14px calc(20px + env(safe-area-inset-bottom)); background: rgba(10, 7, 16, .78); }
+  .nav-in { max-width: none; display: flex; flex-direction: column; gap: 6px; }
+  .nav button { flex-direction: row; justify-content: flex-start; gap: 14px; padding: 15px 16px; font-size: 14px; letter-spacing: .08em; border-radius: 16px; }
+  .nav button:hover { background: var(--card); color: var(--text); }
+  .nav button.on { background: var(--card2); }
+  .nav button span { font-size: 24px; }
+  .nav button.on::after { top: 50%; left: -14px; width: 4px; height: 26px; transform: translateY(-50%); }
+  .nav .dot { position: static; margin-left: auto; }
+
+  .topbar { margin-bottom: 22px; }
+  .brand small { font-size: 12px; }
+  .brand h1 { font-size: 46px; }
+  .conn { font-size: 13px; padding: 8px 14px; }
+  .privacy { height: 38px; padding: 0 16px; font-size: 13px; }
+  .privacy span { font-size: 17px; }
+
+  .cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; align-items: start; }
+  .list-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; }
+  .sec { font-size: 12px; }
+  .card { padding: 18px 20px; }
+  .banner { font-size: 14px; }
+
+  .hero .big { font-size: 120px; }
+  .hero .big span { font-size: 50px; }
+  .kpi { padding: 16px 18px; }
+  .kpi .k { font-size: 11px; }
+  .kpi .v { font-size: 42px; }
+  .row .l { font-size: 15px; } .row .r { font-size: 17px; }
+  .bar-row .h { font-size: 14px; }
+  .venta .t { font-size: 18px; } .venta .a { font-size: 30px; } .venta .m { font-size: 13px; }
+  .btn { font-size: 16px; }
+  .resumen { font-size: 14px; max-height: 460px; }
+
+  .door-count { font-size: 230px; }
+  .door-plus { height: 190px; font-size: 96px; }
+  .door-quick button { height: 78px; font-size: 26px; }
+  .flow { height: 120px; }
+  .kbd-hint { display: block; }
+
+  .fab { right: 40px; bottom: 36px; width: 70px; height: 70px; }
+
+  .backdrop { align-items: center; padding: 24px; }
+  .sheet-wrap { max-width: 640px; }
+  .sheet { max-width: 640px; max-height: 88vh; border-bottom: 1px solid var(--line); border-radius: 26px; padding-bottom: 28px; animation: rise .22s ease both; }
+  .sheet h2 { font-size: 32px; }
+  .dialog { max-width: 400px; }
+  .toast { font-size: 15px; }
+}
+
+@media (min-width: 1500px) {
+  .shell { max-width: 1760px; padding-left: 56px; padding-right: 56px; }
+  .list-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .hero .big { font-size: 140px; }
+  .door-count { font-size: 260px; }
+}
+
+/* Pantallas bajas (celular de costado): la navegación no tapa el contenido */
+@media (max-height: 460px) and (orientation: landscape) and (max-width: 999px) {
+  .shell { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+}

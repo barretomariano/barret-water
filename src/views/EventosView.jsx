@@ -120,7 +120,7 @@ function Acciones({ ev, esActivo, r, onClose, onEdit, onDuplicate }) {
         )}
         <button className="btn danger" disabled={!cerrado} onClick={() => confirm({
           title: "Eliminar evento", confirmLabel: "Eliminar para siempre",
-          msg: "Se borran sus ventas, cobros, gastos y conteo de puerta. No se puede deshacer. Si lo necesitás, exportá los CSV antes.",
+          msg: "Se borran sus ventas, cobros, gastos y conteo de puerta. No se puede deshacer. Si lo necesitás, mandá antes el resumen por WhatsApp desde la pestaña Resumen.",
           onConfirm: () => { api.deleteEvento(ev.id); toast("Evento eliminado", "bad"); onClose(); },
         })}>🗑️ Eliminar evento</button>
         {!cerrado && <div className="tiny muted" style={{ textAlign: "center" }}>Para eliminar un evento primero hay que cerrarlo.</div>}
@@ -131,7 +131,7 @@ function Acciones({ ev, esActivo, r, onClose, onEdit, onDuplicate }) {
 
 // ───────────────────────── Pantalla ─────────────────────────
 export default function EventosView({ eventos, activeId, r, onActivate, version }) {
-  const { toast, confirm } = useApp();
+  const { toast } = useApp();
   const [form, setForm] = useState(null);       // null | {} | evento
   const [acc, setAcc] = useState(null);
   const [sound, setSound] = useState(feedback.isEnabled());
@@ -150,23 +150,9 @@ export default function EventosView({ eventos, activeId, r, onActivate, version 
     else toast("No se pudieron activar las notificaciones", "bad");
   };
 
-  const limpiarAgua = async () => {
-    setBusy(true);
-    try {
-      const keys = await api.legacyPresent();
-      setBusy(false);
-      if (!keys.length) return toast("No hay datos viejos del negocio de agua", "info");
-      confirm({
-        title: "Borrar datos del negocio de agua",
-        msg: `Se eliminan ${keys.length} grupos de datos viejos (clientes, fiados, pedidos, ventas y precios de agua). No afecta a tus eventos. No se puede deshacer.`,
-        confirmLabel: "Borrar datos viejos",
-        onConfirm: () => { api.purgeLegacy().then(() => toast("Datos viejos eliminados")).catch(() => toast("No se pudo borrar", "bad")); },
-      });
-    } catch { setBusy(false); toast("No se pudo consultar la base", "bad"); }
-  };
-
   return (
-    <>
+    <div className="cols">
+      <div className="col">
       <div className="sec"><span>Mis eventos</span><button className="btn ghost sm" onClick={() => { feedback.tap(); setForm({}); }}>+ Nuevo</button></div>
       {lista.length === 0 && (
         <>
@@ -194,6 +180,8 @@ export default function EventosView({ eventos, activeId, r, onActivate, version 
         );
       })}
 
+      </div>
+      <div className="col">
       <div className="sec">Ajustes de este dispositivo</div>
       <div className="card">
         <div className="row"><span>🔊 Sonido y vibración</span><Toggle on={sound} onChange={(v) => { feedback.setEnabled(v); setSound(v); if (v) feedback.success(); }} /></div>
@@ -203,12 +191,9 @@ export default function EventosView({ eventos, activeId, r, onActivate, version 
         </div>
       </div>
 
-      <div className="sec">Mantenimiento</div>
-      <div className="card">
-        <div className="small muted" style={{ marginBottom: 10, lineHeight: 1.5 }}>Si antes usabas la app para el negocio de agua, los datos viejos siguen guardados en la base. Podés borrarlos acá (no toca tus eventos).</div>
-        <button className="btn danger block" disabled={busy} onClick={limpiarAgua}>🧹 Borrar datos del negocio de agua</button>
+      <div className="tiny dim" style={{ textAlign: "center", marginTop: 14 }}>Eventos 🎟️ · v{version}</div>
+
       </div>
-      <div className="tiny dim" style={{ textAlign: "center", marginTop: 14 }}>Entradas · v{version}</div>
 
       {form && <EventoForm base={form.id || form.__copia ? form : null} onClose={() => setForm(null)} onSaved={(ev, isNew) => onActivate(ev.id, isNew)} />}
       {acc && (() => {
@@ -220,6 +205,6 @@ export default function EventosView({ eventos, activeId, r, onActivate, version 
             tiers: Object.fromEntries(tiersDe(ev).map((t) => { const id = uid(); return [id, { ...t, id }]; })),
             reparto: Object.fromEntries(reparticion(ev).map((s) => { const id = uid(); return [id, { ...s, id }]; })) }); }} />;
       })()}
-    </>
+    </div>
   );
 }

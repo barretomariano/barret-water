@@ -53,6 +53,4 @@ export const api = {
     write(`ingresosLog/${eid}/${ts}`, { ts, d, dev: "t" });
     return ok(true);
   },
-  legacyPresent: () => ok(["history_v5", "clientes_v1"]),
-  purgeLegacy: () => ok(),
 };

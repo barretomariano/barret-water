@@ -1,7 +1,7 @@
 {
   "name": "entradas-functions",
   "version": "1.0.0",
-  "description": "Entradas — Cloud Functions (avisos push FCM + iOS Web Push)",
+  "description": "Eventos — Cloud Functions (avisos push FCM + iOS Web Push)",
   "engines": { "node": "20" },
   "main": "index.js",
   "scripts": {

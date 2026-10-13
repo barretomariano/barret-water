@@ -84,7 +84,7 @@ test("flujo completo de una noche: venta con pago parcial, cobro posterior, puer
   // 7) Caja: gasto en efectivo de 5.000 → neto 11.000, reparto 6.600 / 4.400
   await goTab(u, "Caja");
   await u.click(screen.getByRole("button", { name: "+ Agregar" }));
-  await u.type(screen.getByPlaceholderText("$ 0"), "5000");
+  await u.type(screen.getAllByPlaceholderText("$ 0").pop(), "5000"); // el modal es lo último en el DOM
   await u.click(screen.getByRole("button", { name: /Registrar gasto/ }));
   expect(await screen.findByText("$6.600")).toBeInTheDocument();
   expect(screen.getByText("$4.400")).toBeInTheDocument();
@@ -148,4 +148,98 @@ test("anular una venta la excluye del conteo y restaurarla la vuelve a sumar", a
   await u.click(await screen.findByRole("button", { name: /Restaurar/ }));
   await goTab(u, "Resumen");
   await waitFor(() => expect(text("1")).toBe(true));
+});
+
+test("ocultar montos enmascara los importes y se recuerda en el dispositivo", async () => {
+  const u = userEvent.setup();
+  render(<App />);
+  await crearEvento(u);
+  await goTab(u, "Ventas");
+  await u.click(screen.getByRole("button", { name: "Nueva venta" }));
+  await u.click(screen.getByRole("button", { name: /Registrar venta/ }));
+  await goTab(u, "Resumen");
+  expect(await screen.findByText("de $8.000 vendido")).toBeInTheDocument();
+
+  const toggle = screen.getByRole("switch", { name: "Ocultar montos" });
+  await u.click(toggle);
+  expect(toggle).toHaveAttribute("aria-checked", "true");
+  expect(screen.queryByText("de $8.000 vendido")).not.toBeInTheDocument();
+  expect(screen.getAllByText(/\$ ••••/).length).toBeGreaterThan(0);
+  expect(localStorage.getItem("ev:ocultarMontos")).toBe("true");
+
+  // También en Caja
+  await goTab(u, "Caja");
+  expect(screen.queryByText("$8.000")).not.toBeInTheDocument();
+});
+
+test("el resumen es único y se envía solo por WhatsApp con los montos reales", async () => {
+  const u = userEvent.setup();
+  render(<App />);
+  await crearEvento(u);
+  await goTab(u, "Ventas");
+  await u.click(screen.getByRole("button", { name: "Nueva venta" }));
+  await u.click(screen.getByRole("button", { name: /Registrar venta/ }));
+  await goTab(u, "Caja");
+  await u.click(screen.getByRole("button", { name: "+ Agregar" }));
+  await u.type(screen.getAllByPlaceholderText("$ 0").pop(), "3000");
+  await u.click(screen.getByRole("button", { name: /Registrar gasto/ }));
+  await goTab(u, "Resumen");
+
+  const wa = screen.getByRole("link", { name: /WhatsApp/ });
+  const texto = decodeURIComponent(wa.getAttribute("href").split("text=")[1]);
+  expect(wa.getAttribute("href")).toMatch(/^https:\/\/wa\.me\/\?text=/);
+  expect(texto).toContain("INGRESOS (ventas)");
+  expect(texto).toContain("EGRESOS (gastos)");
+  expect(texto).toContain("$8.000");
+  expect(texto).toContain("$3.000");
+  // ya no hay exportación CSV ni segundo botón de resumen
+  expect(screen.queryByRole("button", { name: /CSV/ })).not.toBeInTheDocument();
+  expect(screen.getAllByRole("link", { name: /WhatsApp/ })).toHaveLength(1);
+
+  // con los montos ocultos la vista previa los tapa, pero el link sigue llevando los reales
+  await u.click(screen.getByRole("switch", { name: "Ocultar montos" }));
+  expect(screen.getByLabelText("Vista previa del resumen").textContent).not.toContain("8.000");
+  expect(decodeURIComponent(screen.getByRole("link", { name: /WhatsApp/ }).getAttribute("href"))).toContain("$8.000");
+});
+
+test("ya no existe el apartado de Mantenimiento en Eventos", async () => {
+  const u = userEvent.setup();
+  render(<App />);
+  await crearEvento(u);
+  await goTab(u, "Eventos");
+  expect(screen.queryByText("Mantenimiento")).not.toBeInTheDocument();
+  expect(screen.queryByText(/negocio de agua/)).not.toBeInTheDocument();
+});
+
+test("arqueo de caja: compara el efectivo contado con el esperado", async () => {
+  const u = userEvent.setup();
+  render(<App />);
+  await crearEvento(u);
+  await goTab(u, "Ventas");
+  await u.click(screen.getByRole("button", { name: "Nueva venta" }));
+  await u.click(screen.getByRole("button", { name: /Registrar venta/ })); // 8.000 en efectivo
+  await goTab(u, "Caja");
+  await u.type(screen.getAllByPlaceholderText("$ 0")[0], "7000");
+  await u.click(screen.getByRole("button", { name: /Guardar conteo/ }));
+  expect(await screen.findByText("Falta efectivo")).toBeInTheDocument();
+  expect(screen.getAllByText("$1.000").length).toBeGreaterThan(0);
+});
+
+test("editar una venta cuyo tipo de entrada fue borrado no la cambia de tipo", async () => {
+  const u = userEvent.setup();
+  render(<App />);
+  await crearEvento(u);
+  await goTab(u, "Ventas");
+  await u.click(screen.getByRole("button", { name: "Nueva venta" }));
+  await u.click(screen.getByRole("button", { name: /Registrar venta/ }));
+  // borramos el tipo "Anticipada" del evento directamente en la base
+  const ev = Object.values(__tree().eventos)[0];
+  const tierId = Object.values(ev.tiers).find((t) => t.nombre === "Anticipada").id;
+  await act(async () => { delete __tree().eventos[ev.id].tiers[tierId]; });
+  await u.click(await screen.findByText("1× Anticipada"));
+  await u.click(await screen.findByRole("button", { name: /Editar/ }));
+  await u.click(screen.getByRole("button", { name: /Guardar cambios/ }));
+  const venta = Object.values(__tree().ventas[ev.id])[0];
+  expect(venta.tierNombre).toBe("Anticipada");
+  expect(venta.tierId).toBe(tierId);
 });

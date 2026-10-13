@@ -1,5 +1,5 @@
-import { estadoPago, pagadoDe, saldoDe, resumenEvento } from "./calc";
-import { parseMonto, toCSV, toList, clean } from "./utils";
+import { estadoPago, pagadoDe, saldoDe, resumenEvento, textoResumen } from "./calc";
+import { parseMonto, toList, clean, fmt, whatsappUrl } from "./utils";
 
 const venta = (o = {}) => ({ id: "v", cantidad: 1, total: 10000, tierId: "t1", tierNombre: "Anticipada", pagos: {}, ...o });
 const pago = (monto, metodo = "efectivo", ts = 1) => ({ id: `p${ts}${monto}`, monto, metodo, ts });
@@ -105,9 +105,41 @@ describe("utils", () => {
   test("clean elimina undefined (RTDB lo rechaza)", () => {
     expect(clean({ a: 1, b: undefined, c: { d: undefined, e: 2 } })).toEqual({ a: 1, c: { e: 2 } });
   });
-  test("CSV escapa comillas y neutraliza fórmulas", () => {
-    const csv = toCSV([["a", 'di "hola"'], ["=SUM(A1)", 5]]);
-    expect(csv).toContain('"di ""hola"""');
-    expect(csv).toContain("'=SUM(A1)");
+  test("whatsappUrl codifica el texto para wa.me", () => {
+    const u = whatsappUrl("Neto: $1.000\n*ok*");
+    expect(u.startsWith("https://wa.me/?text=")).toBe(true);
+    expect(decodeURIComponent(u.split("text=")[1])).toBe("Neto: $1.000\n*ok*");
+  });
+});
+
+describe("resumen único para WhatsApp", () => {
+  const evento = { nombre: "Noche Bachata", lugar: "Salón Sur", aforo: 100, arqueoEfectivo: 9000, reparto: { a: { id: "a", nombre: "Socio A", pct: 100 } } };
+  const ventas = { 1: venta({ id: "1", cantidad: 2, total: 16000, vendedor: "Juli", pagos: pagos(pago(16000, "efectivo")) }) };
+  const gastos = { g1: { id: "g1", monto: 5000, metodo: "efectivo", categoria: "sonido" }, g2: { id: "g2", monto: 2000, metodo: "transferencia", categoria: "artistas" } };
+  const r = resumenEvento(evento, ventas, gastos, 1);
+  const t = textoResumen(evento, r, fmt, "sáb 12 oct");
+
+  test("incluye ingresos (ventas) y egresos (gastos) en un solo texto", () => {
+    expect(t).toContain("INGRESOS (ventas)");
+    expect(t).toContain("EGRESOS (gastos)");
+    expect(t).toContain("Anticipada: 2 → $16.000");
+    expect(t).toContain("Sonido / Luces: $5.000");
+    expect(t).toContain("Total gastos: *$7.000*");
+    expect(t).toContain("*Neto: $9.000*");
+  });
+  test("arqueo: compara el efectivo contado con el esperado", () => {
+    expect(r.cajaEfectivo).toBe(11000);        // 16.000 cobrado en efectivo − 5.000 gasto en efectivo
+    expect(r.arqueoDif).toBe(-2000);
+    expect(t).toContain("faltan $2.000");
+  });
+  test("con una función de formato distinta oculta los montos", () => {
+    const oculto = textoResumen(evento, r, () => "$ ••••", "");
+    expect(oculto).not.toContain("16.000");
+    expect(oculto).toContain("$ ••••");
+  });
+  test("sin ventas ni gastos no rompe", () => {
+    const vacio = textoResumen({ nombre: "X" }, resumenEvento({ nombre: "X" }, null, null, 0), fmt, "");
+    expect(vacio).toContain("Sin ventas cargadas");
+    expect(vacio).toContain("Sin gastos cargados");
   });
 });

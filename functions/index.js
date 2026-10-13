@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// ENTRADAS — Cloud Functions
+// EVENTOS — Cloud Functions
 // Avisos push cuando otro celular registra una venta, se llena el aforo o se cierra un evento.
 // FCM (Android/Chrome) + Web Push VAPID (iOS PWA). Mensajes "solo datos": los muestra el
 // service worker (así no se duplican) y no se avisa al mismo celular que hizo la acción.
