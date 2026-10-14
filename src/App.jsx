@@ -109,6 +109,22 @@ export default function App() {
   const go = useCallback((t, filtro = null) => { setVentasFilter(filtro); setTab(t); window.scrollTo(0, 0); }, []);
 
   const locked = evento?.estado === "cerrado";
+
+  // Título de la pestaña del navegador: evento + ventas por cobrar (útil con varias pestañas abiertas).
+  useEffect(() => {
+    document.title = evento ? `${r.pendientes > 0 ? `(${r.pendientes}) ` : ""}${evento.nombre} · Eventos 🎟️` : "Eventos 🎟️";
+  }, [evento, r.pendientes]);
+
+  // Atajos de teclado (PC/Mac): 1–5 cambian de sección.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(e.target?.tagName) || document.querySelector(".backdrop")) return;
+      const t = TABS[Number(e.key) - 1];
+      if (t && (evento || t.id === "eventos")) go(t.id);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [evento, go]);
   const ctx = useMemo(() => ({ toast, confirm, money, hide }), [toast, confirm, money, hide]);
   const pendientes = r.pendientes;
   const cargandoEvento = !!eid && (ventasDb.loading || gastosDb.loading || ingDb.loading);
