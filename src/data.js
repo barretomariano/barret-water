@@ -2,8 +2,8 @@
 // pueden cargar a la vez sin pisarse. Las escrituras NO se esperan con await: sin señal, Firebase
 // las guarda en cola y las sincroniza al reconectar, y la pantalla se actualiza al instante.
 import { useEffect, useState } from "react";
-import { ref, onValue, set, update, remove, runTransaction, get } from "firebase/database";
-import { db, ROOT, BASE, LEGACY_KEYS } from "./firebase";
+import { ref, onValue, set, update, remove, runTransaction } from "firebase/database";
+import { db, ROOT } from "./firebase";
 import { clean, uid, deviceId } from "./utils";
 
 const P = (path) => ref(db, `${ROOT}/${path}`);
@@ -67,11 +67,4 @@ export const api = {
     }
     return res.committed;
   },
-
-  // ── Limpieza opcional de datos del negocio de agua ──
-  async legacyPresent() {
-    const snaps = await Promise.all(LEGACY_KEYS.map((k) => get(ref(db, `${BASE}/${k}`))));
-    return LEGACY_KEYS.filter((_, i) => snaps[i].exists());
-  },
-  purgeLegacy: () => update(ref(db, BASE), Object.fromEntries(LEGACY_KEYS.map((k) => [k, null]))),
 };

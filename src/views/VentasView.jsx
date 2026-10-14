@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../data";
 import { estadoPago, pagadoDe, pagosDe, saldoDe, sobrepagoDe, METODOS } from "../calc";
 import { feedback } from "../feedback";
@@ -10,8 +10,12 @@ export const tiersDe = (evento) => toList(evento?.tiers).sort((a, b) => (a.orden
 // ───────────────────────── Alta / edición de venta ─────────────────────────
 export function VentaModal({ evento, venta, ventas, onClose }) {
   const { toast } = useApp();
-  const tiers = tiersDe(evento);
   const editing = !!venta;
+  const base0 = tiersDe(evento);
+  // Si el tipo de entrada de la venta fue borrado del evento, lo conservamos para no cambiarlo sin querer al editar.
+  const tiers = venta && !base0.some((t) => t.id === venta.tierId)
+    ? [...base0, { id: venta.tierId || "?", nombre: venta.tierNombre || "—", precio: venta.cantidad ? Math.round((venta.total || 0) / venta.cantidad) : 0, cortesia: !(venta.total > 0), orden: 999 }]
+    : base0;
   const first = tiers.find((t) => t.id === venta?.tierId) || tiers[0];
 
   const [tierId, setTierId] = useState(first?.id);
@@ -126,29 +130,30 @@ export function VentaModal({ evento, venta, ventas, onClose }) {
 
 // ───────────────────────── Detalle y cobros ─────────────────────────
 function DetalleVenta({ evento, venta, locked, onClose, onEdit }) {
-  const { toast, confirm } = useApp();
+  const { toast, confirm, money } = useApp();
   const total = venta.total || 0, pagado = pagadoDe(venta), saldo = saldoDe(venta), sobre = sobrepagoDe(venta);
   const estado = estadoPago(venta);
   const [monto, setMonto] = useState(saldo);
   const [metodo, setMetodo] = useState("efectivo");
+  // Si el saldo cambia (se cobró o se quitó un cobro), el monto sugerido se actualiza solo.
+  useEffect(() => { setMonto(saldo); }, [saldo]);
 
   const cobrar = () => {
     if (monto <= 0) return toast("Ingresá un monto", "bad");
     if (monto > saldo) return toast(`Supera el saldo (${fmt(saldo)})`, "bad");
     api.addPago(evento.id, venta.id, { id: uid(), monto: toInt(monto), metodo, ts: Date.now() }).catch(() => toast("No se pudo guardar", "bad"));
     feedback.cashier(); toast(monto === saldo ? "Venta saldada ✓" : `Cobro registrado · resta ${fmt(saldo - monto)}`);
-    setMonto(Math.max(0, saldo - monto));
   };
 
   return (
     <Sheet title={`${venta.cantidad}× ${venta.tierNombre}`} onClose={onClose}>
       <div className="card" style={{ animation: "none" }}>
         <div className="row"><span className="l">Estado</span><EstadoBadge estado={estado} /></div>
-        <div className="row"><span className="l">Total</span><span className="r">{fmt(total)}</span></div>
-        <div className="row"><span className="l">Cobrado</span><span className="r ok">{fmt(pagado)}</span></div>
-        {saldo > 0 && <div className="row"><span className="l">Falta cobrar</span><span className="r warn">{fmt(saldo)}</span></div>}
+        <div className="row"><span className="l">Total</span><span className="r">{money(total)}</span></div>
+        <div className="row"><span className="l">Cobrado</span><span className="r ok">{money(pagado)}</span></div>
+        {saldo > 0 && <div className="row"><span className="l">Falta cobrar</span><span className="r warn">{money(saldo)}</span></div>}
         {total > 0 && <div style={{ marginTop: 8 }}><Progress pct={(pagado / total) * 100} tone={estado === "pagada" ? "ok" : "warn"} /></div>}
-        {sobre > 0 && <div className="banner warn" style={{ marginTop: 10, marginBottom: 0 }}>Se cobró <b>{fmt(sobre)}</b> de más (revisá los cobros o el total).</div>}
+        {sobre > 0 && <div className="banner warn" style={{ marginTop: 10, marginBottom: 0 }}>Se cobró <b>{money(sobre)}</b> de más (revisá los cobros o el total).</div>}
       </div>
 
       <div className="small muted" style={{ marginBottom: 12, lineHeight: 1.6 }}>
@@ -173,7 +178,7 @@ function DetalleVenta({ evento, venta, locked, onClose, onEdit }) {
         <div className="row" key={p.id}>
           <span className="l">{METODOS.find((m) => m.id === p.metodo)?.icon} {timeLabel(p.ts)} · {p.metodo}</span>
           <span className="r">
-            {fmt(p.monto)}{" "}
+            {money(p.monto)}{" "}
             {!locked && <button className="btn ghost sm" style={{ marginLeft: 6, padding: "4px 9px" }} aria-label="Quitar cobro"
               onClick={() => confirm({ title: "Quitar cobro", msg: `Se elimina el cobro de ${fmt(p.monto)}.`, confirmLabel: "Quitar",
                 onConfirm: () => { api.removePago(evento.id, venta.id, p.id); toast("Cobro eliminado", "warn"); } })}>✕</button>}
@@ -203,6 +208,7 @@ const FILTROS = [
 ];
 
 export default function VentasView({ evento, ventas, locked, initialFilter }) {
+  const { money } = useApp();
   const [filtro, setFiltro] = useState(initialFilter || "todas");
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(null);
@@ -240,25 +246,27 @@ export default function VentasView({ evento, ventas, locked, initialFilter }) {
       {lista.length === 0 && (
         <Empty icon="🎟️">{ventas.length === 0 ? "Todavía no hay ventas en este evento.\nTocá + para registrar la primera." : "No hay ventas con ese filtro."}</Empty>
       )}
+      <div className="list-grid">
       {lista.map((v) => {
         const e = estadoPago(v), pag = pagadoDe(v), tot = v.total || 0;
         return (
           <div key={v.id} className="card tap" onClick={() => { feedback.tap(); setSel(v.id); }}>
             <div className={`venta${v.anulada ? " anulada" : ""}`}>
               <div className="t">{v.cantidad}× {v.tierNombre}</div>
-              <div className="a">{fmt(tot)}</div>
+              <div className="a">{money(tot)}</div>
               <div className="m">{timeLabel(v.ts)}{v.comprador ? ` · ${v.comprador}` : ""}{v.vendedor ? ` · 🧾 ${v.vendedor}` : ""}</div>
               <div style={{ textAlign: "right" }}><EstadoBadge estado={e} /></div>
             </div>
             {(e === "parcial") && (
               <div style={{ marginTop: 9 }}>
                 <Progress pct={(pag / tot) * 100} tone="warn" />
-                <div className="tiny muted" style={{ marginTop: 4 }}>Cobrado {fmt(pag)} · falta {fmt(tot - pag)}</div>
+                <div className="tiny muted" style={{ marginTop: 4 }}>Cobrado {money(pag)} · falta {money(tot - pag)}</div>
               </div>
             )}
           </div>
         );
       })}
+      </div>
 
       {!locked && <button className="fab" aria-label="Nueva venta" onClick={() => { feedback.tap(); setNueva(true); }}>+</button>}
       {nueva && <VentaModal evento={evento} ventas={ventas} onClose={() => setNueva(false)} />}

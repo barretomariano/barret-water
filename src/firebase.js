@@ -19,9 +19,3 @@ export const db = getDatabase(app);
 export const BASE = "barretwater";
 // Datos del CRM de eventos (separados de los datos viejos del negocio de agua).
 export const ROOT = `${BASE}/eventos_v1`;
-// Claves del negocio de agua que ya no se usan (para la limpieza opcional en Ajustes).
-export const LEGACY_KEYS = [
-  "sectors_v3", "prices_v1", "costos20_v2", "costos12_v2", "fijosCats_v1", "history_v5",
-  "fiados_v2", "clientes_v1", "alertPct", "goalArs", "appName", "darkMode",
-  "pedidos_v1", "zones_v1", "notifEnabled",
-];

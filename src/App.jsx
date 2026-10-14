@@ -5,14 +5,15 @@ import { useOnline, useRtdb } from "./data";
 import { resumenEvento } from "./calc";
 import { feedback } from "./feedback";
 import { listenForeground } from "./notifications";
-import { diffDays, local, todayKey, toList } from "./utils";
+import { diffDays, fmt, local, todayKey, toList } from "./utils";
 import EventoView from "./views/EventoView";
 import VentasView, { tiersDe } from "./views/VentasView";
 import PuertaView from "./views/PuertaView";
 import CajaView from "./views/CajaView";
 import EventosView from "./views/EventosView";
 
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "2.0.0";
+const OCULTO = "$ ••••";
 
 const TABS = [
   { id: "resumen", label: "Resumen", icon: "📊" },
@@ -39,6 +40,10 @@ export default function App() {
   const [confirmState, setConfirm] = useState(null);
   const [activeId, setActiveId] = useState(() => local.get("activo"));
   const toastTimer = useRef(null);
+  // Privacidad: oculta los montos en pantalla (se recuerda en este dispositivo).
+  const [hide, setHideState] = useState(() => local.get("ocultarMontos", false) === true);
+  const setHide = useCallback((v) => { setHideState(v); local.set("ocultarMontos", v); }, []);
+  const money = useCallback((n) => (hide ? OCULTO : fmt(n)), [hide]);
 
   // ── Datos en tiempo real ──
   const evs = useRtdb("eventos");
@@ -104,7 +109,7 @@ export default function App() {
   const go = useCallback((t, filtro = null) => { setVentasFilter(filtro); setTab(t); window.scrollTo(0, 0); }, []);
 
   const locked = evento?.estado === "cerrado";
-  const ctx = useMemo(() => ({ toast, confirm }), [toast, confirm]);
+  const ctx = useMemo(() => ({ toast, confirm, money, hide }), [toast, confirm, money, hide]);
   const pendientes = r.pendientes;
   const cargandoEvento = !!eid && (ventasDb.loading || gastosDb.loading || ingDb.loading);
 
@@ -118,8 +123,13 @@ export default function App() {
           <header className="topbar">
             <div className="brand">
               <small>{evento ? (evento.tipo === "rock" ? "🎸 Noche de rock" : evento.tipo === "bachata" ? "💃 Noche de bachata" : "🎉 Evento") : "Control de entradas"}</small>
-              <h1>{evento?.nombre || "Entradas"}</h1>
+              <h1>{evento?.nombre || "Eventos"}</h1>
             </div>
+            <button type="button" className={`privacy${hide ? " on" : ""}`} role="switch" aria-checked={hide} aria-label="Ocultar montos"
+              title={hide ? "Montos ocultos: tocá para mostrarlos" : "Ocultar montos por privacidad"}
+              onClick={() => { feedback.tap(); setHide(!hide); }}>
+              <span aria-hidden="true">{hide ? "🙈" : "👁️"}</span><b>{hide ? "Montos ocultos" : "Ocultar montos"}</b>
+            </button>
             <div className={`conn${online ? "" : " off"}`} title={online ? "Conectado" : "Sin conexión: los cambios se guardan y se sincronizan al volver la señal"}><i />{online ? "En línea" : "Sin señal"}</div>
           </header>
 
@@ -139,7 +149,7 @@ export default function App() {
           ) : (
             <main className="tab" key={`${tabActual}-${eid}`}>
               {tabActual !== "eventos" && cargandoEvento && <div className="spinner" role="status" aria-label="Cargando evento" />}
-              {tabActual === "resumen" && evento && !cargandoEvento && <EventoView evento={evento} r={r} ventas={ventas} gastos={gastos} locked={locked} go={go} />}
+              {tabActual === "resumen" && evento && !cargandoEvento && <EventoView evento={evento} r={r} ventas={ventas} locked={locked} go={go} />}
               {tabActual === "ventas" && evento && !cargandoEvento && <VentasView evento={evento} ventas={ventas} locked={locked} initialFilter={ventasFilter} />}
               {tabActual === "puerta" && evento && !cargandoEvento && <PuertaView evento={evento} r={r} log={log} locked={locked} />}
               {tabActual === "caja" && evento && !cargandoEvento && <CajaView evento={evento} r={r} gastos={gastos} locked={locked} />}

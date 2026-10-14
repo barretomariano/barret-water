@@ -1,4 +1,4 @@
-// Utilidades generales: formato, fechas (siempre hora Argentina), ids, CSV.
+// Utilidades generales: formato, fechas (siempre hora Argentina), ids.
 
 const TZ = "America/Argentina/Buenos_Aires";
 
@@ -64,29 +64,8 @@ export const clean = (x) => {
   return x;
 };
 
-// ── CSV ─────────────────────────────────────────────────────────────────────
-const csvCell = (v) => {
-  let s = v === null || v === undefined ? "" : String(v);
-  // Evita que Excel interprete texto como fórmula (inyección CSV).
-  if (/^[=+\-@\t\r]/.test(s) && Number.isNaN(Number(s))) s = "'" + s;
-  return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-};
-export const toCSV = (rows) => "\uFEFF" + rows.map((r) => r.map(csvCell).join(";")).join("\r\n");
-
-export function downloadFile(filename, content, mime = "text/csv;charset=utf-8") {
-  const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1500);
-}
-
-export const slug = (s) =>
-  String(s || "evento").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "evento";
+// Abre WhatsApp (app o web) con el texto ya cargado para elegir el chat.
+export const whatsappUrl = (text) => `https://wa.me/?text=${encodeURIComponent(text)}`;
 
 // ── Preferencias del dispositivo (no se comparten entre celulares) ─────────
 export const local = {
