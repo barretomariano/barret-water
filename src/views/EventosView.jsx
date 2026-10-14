@@ -114,7 +114,7 @@ function Acciones({ ev, esActivo, r, onClose, onEdit, onDuplicate }) {
         ) : (
           <button className="btn ghost" onClick={() => confirm({
             title: "Cerrar evento", danger: false, confirmLabel: "Cerrar evento",
-            msg: `Se bloquean ventas, gastos y contador de puerta.${esActivo && r?.pendientes ? ` Ojo: hay ${r.pendientes} ventas con ${fmt(r.porCobrar)} sin cobrar.` : ""} Podés reabrirlo cuando quieras.`,
+            msg: `Se bloquean ventas, gastos y contador de puerta.${esActivo && r?.pendientes ? ` Ojo: hay ${r.pendientes} ventas con ${fmt(r.porCobrar)} sin cobrar.` : ""}${esActivo && r && r.arqueo === null ? " Todavía no cargaste el conteo de efectivo en Caja." : ""}${esActivo ? " Antes de cerrar, mandá el resumen por WhatsApp desde Resumen." : ""} Podés reabrirlo cuando quieras.`,
             onConfirm: () => { api.patchEvento(ev.id, { estado: "cerrado", cerradoAt: Date.now() }); toast("Evento cerrado", "info"); onClose(); },
           })}>🔒 Cerrar evento</button>
         )}

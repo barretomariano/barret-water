@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../data";
 import { estadoPago, pagadoDe, pagosDe, saldoDe, sobrepagoDe, METODOS } from "../calc";
 import { feedback } from "../feedback";
@@ -229,6 +229,20 @@ export default function VentasView({ evento, ventas, locked, initialFilter }) {
       .sort((a, b) => (b.ts || 0) - (a.ts || 0));
   }, [ventas, filtro, q]);
 
+  const tot = useMemo(() => lista.reduce((a, v) => {
+    if (estadoPago(v) === "anulada") return a;
+    a.entradas += v.cantidad || 0; a.total += v.total || 0; a.cobrado += pagadoDe(v); return a;
+  }, { entradas: 0, total: 0, cobrado: 0 }), [lista]);
+  const buscador = useRef(null);
+  useEffect(() => { // "/" enfoca el buscador (mostrador con teclado)
+    const onKey = (e) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || /INPUT|TEXTAREA|SELECT/.test(e.target?.tagName) || document.querySelector(".backdrop")) return;
+      e.preventDefault(); buscador.current?.focus();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
   const venta = sel && ventas.find((v) => v.id === sel);
   const cobrarCount = ventas.filter((v) => ["pendiente", "parcial"].includes(estadoPago(v))).length;
 
@@ -241,7 +255,17 @@ export default function VentasView({ evento, ventas, locked, initialFilter }) {
           </button>
         ))}
       </div>
-      <input className="input search" type="search" placeholder="Buscar comprador, vendedor, nota…" value={q} onChange={(e) => setQ(e.target.value)} />
+      <input ref={buscador} className="input search" type="search" placeholder="Buscar comprador, vendedor, nota…  ( / )" value={q} onChange={(e) => setQ(e.target.value)} />
+
+      {lista.length > 0 && (
+        <div className="stats-strip" aria-label="Totales del filtro actual">
+          <span><b>{lista.length}</b> {lista.length === 1 ? "venta" : "ventas"}</span>
+          <span><b>{tot.entradas}</b> entradas</span>
+          <span>Total <b>{money(tot.total)}</b></span>
+          <span>Cobrado <b className="ok">{money(tot.cobrado)}</b></span>
+          {tot.total - tot.cobrado > 0 && <span>Falta <b className="warn">{money(tot.total - tot.cobrado)}</b></span>}
+        </div>
+      )}
 
       {lista.length === 0 && (
         <Empty icon="🎟️">{ventas.length === 0 ? "Todavía no hay ventas en este evento.\nTocá + para registrar la primera." : "No hay ventas con ese filtro."}</Empty>

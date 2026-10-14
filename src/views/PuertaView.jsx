@@ -63,8 +63,7 @@ export default function PuertaView({ evento, r, log, locked }) {
       <div className="col">
       <div className="card" style={{ paddingTop: 20, paddingBottom: 20 }}>
         <div className={`door-count${lleno ? " full" : ""}`} aria-live="polite">{fmtNum(n)}</div>
-        <div className="hero"><div className="cap" style={{ textAlign: "center", color: "var(--accent2)", fontSize: 12, fontWeight: 800, letterSpacing: ".14em", textTransform: "uppercase", marginTop: 6 }}>
-          Personas adentro</div></div>
+        <div className="door-cap">Personas adentro</div>
       </div>
 
       <button className="door-plus" disabled={locked} onClick={() => tocar(1)} aria-label="Sumar una persona">+1</button>

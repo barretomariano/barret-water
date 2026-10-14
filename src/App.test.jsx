@@ -243,3 +243,27 @@ test("editar una venta cuyo tipo de entrada fue borrado no la cambia de tipo", a
   expect(venta.tierNombre).toBe("Anticipada");
   expect(venta.tierId).toBe(tierId);
 });
+
+test("Ventas muestra la franja de totales y el atajo / enfoca el buscador", async () => {
+  const u = userEvent.setup();
+  render(<App />);
+  await crearEvento(u);
+  await goTab(u, "Ventas");
+  await u.click(screen.getByRole("button", { name: "Nueva venta" }));
+  await u.click(screen.getByRole("button", { name: /Registrar venta/ }));
+  const strip = await screen.findByLabelText("Totales del filtro actual");
+  expect(strip.textContent).toContain("1 venta");
+  expect(strip.textContent).toContain("$8.000");
+  await u.keyboard("/");
+  expect(screen.getByRole("searchbox")).toHaveFocus();
+});
+
+test("las teclas 1–5 cambian de sección", async () => {
+  const u = userEvent.setup();
+  render(<App />);
+  await crearEvento(u);
+  await u.keyboard("3");
+  expect(await screen.findByText("Personas adentro")).toBeInTheDocument();
+  await u.keyboard("4");
+  expect(await screen.findByText("Arqueo de caja")).toBeInTheDocument();
+});
