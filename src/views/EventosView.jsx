@@ -2,7 +2,7 @@ import { useState } from "react";
 import { api } from "../data";
 import { TIPOS_EVENTO } from "../calc";
 import { feedback } from "../feedback";
-import { enableNotifications, notifStatus, isIOS, isPWA } from "../notifications";
+import { enableNotifications, testNotifications, notifStatus, isIOS, isPWA } from "../notifications";
 import { fmt, labelDate, montoInput, parseMonto, todayKey, toInt, toList, uid } from "../utils";
 import { Chips, Empty, Field, Sheet, Toggle, useApp } from "../ui";
 import { tiersDe } from "./VentasView";
@@ -147,7 +147,15 @@ export default function EventosView({ eventos, activeId, r, onActivate, version 
     if (res.ok) toast("Notificaciones activadas en este dispositivo");
     else if (res.reason === "ios-install") toast("En iPhone: Compartir → “Agregar a inicio” y abrí la app desde ahí", "warn");
     else if (res.reason === "denied") toast("Permiso denegado. Habilitalo en los ajustes del navegador.", "bad");
-    else toast("No se pudieron activar las notificaciones", "bad");
+    else toast(`No se pudieron activar las notificaciones${res.message ? `: ${res.message}` : ""}`, "bad");
+  };
+
+  const probarPush = async () => {
+    setBusy(true);
+    const res = await testNotifications();
+    setBusy(false);
+    if (res.ok) toast("Prueba enviada: deberían llegar 2 avisos (local y desde el servidor)", "info");
+    else toast(`No se pudo probar${res.message ? `: ${res.message}` : ""}`, "bad");
   };
 
   return (
@@ -187,7 +195,12 @@ export default function EventosView({ eventos, activeId, r, onActivate, version 
         <div className="row"><span>🔊 Sonido y vibración</span><Toggle on={sound} onChange={(v) => { feedback.setEnabled(v); setSound(v); if (v) feedback.success(); }} /></div>
         <div className="row">
           <span>🔔 Avisos de ventas<br /><span className="tiny muted">{push === "on" ? "Activados" : push === "denied" ? "Bloqueados por el navegador" : push === "unsupported" ? "No disponible acá" : isIOS() && !isPWA() ? "Instalá la app en inicio primero" : "Recibí un aviso cuando otro celular venda"}</span></span>
-          {push !== "unsupported" && push !== "denied" && <button className="btn ghost sm" disabled={busy || push === "on"} onClick={activarPush}>{push === "on" ? "✓" : "Activar"}</button>}
+          {push !== "unsupported" && push !== "denied" && (
+            <span style={{ display: "flex", gap: 6 }}>
+              {push === "on" && <button className="btn ghost sm" disabled={busy} onClick={probarPush}>Probar</button>}
+              <button className="btn ghost sm" disabled={busy || push === "on"} onClick={activarPush}>{push === "on" ? "✓" : "Activar"}</button>
+            </span>
+          )}
         </div>
       </div>
 
