@@ -46,11 +46,10 @@ export const api = {
   saveGasto: (eid, g) => (write(`gastos/${eid}/${g.id}`, g), ok()),
   deleteGasto: (eid, gid) => (write(`gastos/${eid}/${gid}`, null), ok()),
   puerta: (eid, d) => {
-    const cur = Number(read(`ingresos/${eid}`)) || 0;
-    if (cur + d < 0) return ok(false);
-    write(`ingresos/${eid}`, cur + d);
     const ts = Date.now() + Math.random();
-    write(`ingresosLog/${eid}/${ts}`, { ts, d, dev: "t" });
+    write(`ingresosLog/${eid}/${ts}`, { ts, d, dev: "t", v: 2 });
     return ok(true);
   },
 };
+export const flushPuerta = () => {};
+export const usePuertaPendientes = () => 0;

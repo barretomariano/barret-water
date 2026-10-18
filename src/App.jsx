@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./styles.css";
 import { AppCtx, ConfirmDialog, Empty } from "./ui";
-import { useOnline, useRtdb } from "./data";
-import { resumenEvento } from "./calc";
+import { flushPuerta, useOnline, useRtdb } from "./data";
+import { resumenEvento, contarIngresos } from "./calc";
 import { feedback } from "./feedback";
 import { listenForeground, refreshNotifications } from "./notifications";
 import { diffDays, fmt, local, todayKey, toList } from "./utils";
@@ -74,13 +74,14 @@ export default function App() {
   const ventas = useMemo(() => toList(ventasDb.data), [ventasDb.data]);
   const gastos = useMemo(() => toList(gastosDb.data), [gastosDb.data]);
   const log = useMemo(() => toList(logDb.data).filter((e) => e && e.ts), [logDb.data]);
+  const ingresos = useMemo(() => contarIngresos(ingDb.data, log), [ingDb.data, log]);
   const r = useMemo(() => {
-    const res = resumenEvento(evento, ventas, gastos, Number(ingDb.data) || 0);
+    const res = resumenEvento(evento, ventas, gastos, ingresos);
     // Si se renombró un tipo de entrada, mostramos el nombre vigente.
     const nombres = Object.fromEntries(tiersDe(evento).map((t) => [t.id, t.nombre]));
     res.porTier = res.porTier.map((t) => ({ ...t, nombre: nombres[t.id] || t.nombre }));
     return res;
-  }, [evento, ventas, gastos, ingDb.data]);
+  }, [evento, ventas, gastos, ingresos]);
 
   // ── Toast / confirmación ──
   const toast = useCallback((msg, kind = "ok") => {
@@ -91,6 +92,17 @@ export default function App() {
   }, []);
   const confirm = useCallback((c) => setConfirm(c), []);
   useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  // ── Toques de puerta pendientes: se reenvían al volver la señal o la app ──
+  useEffect(() => {
+    const f = () => flushPuerta();
+    const v = () => { if (document.visibilityState === "visible") flushPuerta(); };
+    f();
+    window.addEventListener("online", f);
+    document.addEventListener("visibilitychange", v);
+    return () => { window.removeEventListener("online", f); document.removeEventListener("visibilitychange", v); };
+  }, []);
+  useEffect(() => { if (online) flushPuerta(); }, [online]);
 
   // ── Service worker (notificaciones + modo offline) ──
   useEffect(() => {
