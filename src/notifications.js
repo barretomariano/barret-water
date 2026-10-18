@@ -61,7 +61,8 @@ const b64ToBytes = (b64url) => {
   return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 };
 
-async function registerIOS(reg) {
+// Web Push estándar (VAPID): funciona en iOS, Android y escritorio sin pasar por el registro de FCM.
+async function registerWebPush(reg) {
   const opts = { userVisibleOnly: true, applicationServerKey: b64ToBytes(VAPID_PUBLIC) };
   let sub;
   try {
@@ -81,9 +82,13 @@ async function registerIOS(reg) {
     ts: Date.now(), device: deviceId(), ua: navigator.userAgent.slice(0, 80),
   });
   await pruneOld("ios_push_subs", key);
+  await pruneOld("fcm_tokens", null); // si antes usaba FCM, se da de baja para no recibir duplicados
 }
 
-const register = (reg) => (isIOS() ? registerIOS(reg) : registerFCM(reg));
+// Web Push estándar en todos lados; FCM solo si el navegador no tiene pushManager.
+// (El registro de FCM falla con "missing required authentication credential" si la API key
+// del proyecto está restringida; Web Push no depende de eso.)
+const register = (reg) => (reg.pushManager ? registerWebPush(reg) : registerFCM(reg));
 
 export async function enableNotifications() {
   if (!("Notification" in window) || !("serviceWorker" in navigator)) return { ok: false, reason: "unsupported" };
