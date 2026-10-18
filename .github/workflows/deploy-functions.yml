@@ -1,4 +1,5 @@
 name: Deploy Firebase Functions
+# Plan Blaze activado: reintento de deploy.
 
 on:
   push:
