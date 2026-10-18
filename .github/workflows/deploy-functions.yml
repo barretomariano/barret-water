@@ -34,7 +34,15 @@ jobs:
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
 
       - name: Deploy to Firebase
-        run: firebase deploy --only functions --project barretwater --force --non-interactive
+        run: |
+          set +e
+          firebase deploy --only functions --project barretwater --force --non-interactive 2>&1 | tee /tmp/deploy.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            # Resumen del error como anotaciones (visibles sin abrir el log completo)
+            grep -v '^\s*$' /tmp/deploy.log | tail -n 25 | while IFS= read -r line; do echo "::error::${line:0:400}"; done
+          fi
+          exit $code
         env:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
 
