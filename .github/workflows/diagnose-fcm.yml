@@ -1,0 +1,40 @@
+name: Diagnose FCM
+on: workflow_dispatch
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auth
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
+          gcloud auth activate-service-account --key-file=/tmp/sa.json --project=barretwater 2>&1 | tail -1
+      - name: Enable FCM-related APIs
+        run: |
+          set +e
+          out=""
+          for api in fcmregistrations.googleapis.com firebaseinstallations.googleapis.com fcm.googleapis.com firebaseremoteconfig.googleapis.com apikeys.googleapis.com; do
+            r=$(gcloud services enable $api --project=barretwater 2>&1 | tail -1 | cut -c1-160)
+            out="$out$api: ${r:-OK}%0A"
+          done
+          echo "::notice::$out"
+      - name: API key restrictions
+        run: |
+          set +e
+          gcloud services api-keys list --project=barretwater --format=json > /tmp/keys.json 2>/tmp/keys.err
+          python3 - <<'PY'
+          import json,subprocess
+          try: keys=json.load(open('/tmp/keys.json'))
+          except Exception: keys=[]
+          err=open('/tmp/keys.err').read().strip()[-300:]
+          out=[]
+          for k in keys:
+              name=k['name']
+              s=subprocess.run(['gcloud','services','api-keys','get-key-string',name,'--format=value(keyString)'],capture_output=True,text=True).stdout.strip()
+              r=k.get('restrictions',{})
+              targets=[t.get('service') for t in r.get('apiTargets',[])]
+              out.append(f"{k.get('displayName')} match_app_key={s.startswith('AIzaSyAlxZ1')} browser={r.get('browserKeyRestrictions')} apis={targets or 'SIN RESTRICCION'}")
+          print("::notice::"+("%0A".join(out) or "sin keys")+("%0AERR:"+err.replace("\n"," ") if err else ""))
+          PY
+      - name: Cleanup
+        if: always()
+        run: rm -f /tmp/sa.json
