@@ -4,7 +4,7 @@ import { AppCtx, ConfirmDialog, Empty } from "./ui";
 import { useOnline, useRtdb } from "./data";
 import { resumenEvento } from "./calc";
 import { feedback } from "./feedback";
-import { listenForeground } from "./notifications";
+import { listenForeground, refreshNotifications } from "./notifications";
 import { diffDays, fmt, local, todayKey, toList } from "./utils";
 import EventoView from "./views/EventoView";
 import VentasView, { tiersDe } from "./views/VentasView";
@@ -94,7 +94,10 @@ export default function App() {
 
   // ── Service worker (notificaciones + modo offline) ──
   useEffect(() => {
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/firebase-messaging-sw.js").catch((e) => console.warn("[SW]", e));
+    if (!("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.register("/firebase-messaging-sw.js")
+      .catch((e) => console.warn("[SW]", e))
+      .then(() => refreshNotifications());
   }, []);
   useEffect(() => {
     let off = () => {};

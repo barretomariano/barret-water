@@ -12,6 +12,8 @@ const webpush = require("web-push");
 
 initializeApp();
 
+// Nombres de funciones: avisoNuevaVenta / avisoCierreEvento / avisoPrueba. Las viejas del negocio de
+// agua (onNuevoPedido, onNuevaVenta, onCierreCaja) se borran en el deploy (workflow usa --force).
 // TODO(seguridad): la clave privada está versionada en el repo. Rotala y pasala a un secreto
 // (firebase functions:secrets:set VAPID_PRIVATE) cuando puedas. Ver informe del cambio.
 const VAPID_PUBLIC = "BEybofpYcq0TJmFvivMha3SxZtPVi9444ydLc-NJssYYP8oE7F4l9BdmFEs_ir5vMN6u248S_FXlIY8hRekjOtM";
@@ -23,54 +25,61 @@ const ROOT = `${BASE}/eventos_v1`;
 const REGION = "us-central1";
 const fmt = (n) => "$" + Math.round(Number(n) || 0).toLocaleString("es-AR");
 
-async function fcmTargets(exclude) {
+// exclude = celular que originó la acción (no se le avisa); only = avisar solo a ese celular (prueba).
+const pick = (device, exclude, only) => (!exclude || device !== exclude) && (!only || device === only);
+
+async function fcmTargets(exclude, only) {
   const data = (await getDatabase().ref(`${BASE}/fcm_tokens`).once("value")).val() || {};
   return Object.entries(data)
     .map(([key, v]) => ({ key, token: typeof v === "string" ? v : v?.token, device: v?.device }))
-    .filter((t) => t.token && (!exclude || t.device !== exclude));
+    .filter((t) => t.token && pick(t.device, exclude, only));
 }
 
-async function iosTargets(exclude) {
+async function iosTargets(exclude, only) {
   const data = (await getDatabase().ref(`${BASE}/ios_push_subs`).once("value")).val() || {};
   return Object.entries(data)
-    .filter(([, v]) => v?.endpoint && v?.p256dh && v?.auth && (!exclude || v.device !== exclude))
+    .filter(([, v]) => v?.endpoint && v?.p256dh && v?.auth && pick(v.device, exclude, only))
     .map(([key, v]) => ({ key, ...v }));
 }
 
-async function sendFCM(title, body, exclude) {
-  const targets = await fcmTargets(exclude);
+async function sendFCM(title, body, exclude, only) {
+  const targets = await fcmTargets(exclude, only);
   if (!targets.length) return;
   const res = await getMessaging().sendEachForMulticast({
     tokens: targets.map((t) => t.token),
     data: { title, body, url: "/" },
     android: { priority: "high" },
-    webpush: { headers: { Urgency: "high" } },
+    webpush: { headers: { Urgency: "high", TTL: "86400" } },
   });
+  console.log(`[FCM] enviados ${res.successCount}/${targets.length}`);
   const db = getDatabase();
   await Promise.all(res.responses.map((r, i) => {
     const code = r.error?.code;
+    if (!r.success) console.warn("[FCM] fallo", code, r.error?.message);
     return !r.success && (code === "messaging/invalid-registration-token" || code === "messaging/registration-token-not-registered")
       ? db.ref(`${BASE}/fcm_tokens/${targets[i].key}`).remove() : null;
   }));
 }
 
-async function sendIOS(title, body, exclude) {
-  const subs = await iosTargets(exclude);
+async function sendIOS(title, body, exclude, only) {
+  const subs = await iosTargets(exclude, only);
   const db = getDatabase();
   const payload = JSON.stringify({ title, body, icon: "/icon-192.png" });
   await Promise.all(subs.map(async (sub) => {
     try {
       await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload);
     } catch (e) {
+      console.warn("[iOS] fallo", e.statusCode, e.body || e.message);
       if (e.statusCode === 410 || e.statusCode === 404) await db.ref(`${BASE}/ios_push_subs/${sub.key}`).remove();
     }
   }));
 }
 
-const sendPush = (title, body, exclude) => Promise.allSettled([sendFCM(title, body, exclude), sendIOS(title, body, exclude)]);
+const sendPush = (title, body, exclude, only) => Promise.allSettled([sendFCM(title, body, exclude, only), sendIOS(title, body, exclude, only)])
+  .then((rs) => rs.forEach((r) => r.status === "rejected" && console.error("[push] error", r.reason)));
 
 // Nueva venta de entradas (+ aviso único cuando se llena el aforo).
-exports.onNuevaVenta = onValueCreated({ ref: `/${ROOT}/ventas/{eventoId}/{ventaId}`, region: REGION }, async (event) => {
+exports.avisoNuevaVenta = onValueCreated({ ref: `/${ROOT}/ventas/{eventoId}/{ventaId}`, region: REGION }, async (event) => {
   const v = event.data.val();
   if (!v || v.anulada) return;
   const db = getDatabase();
@@ -91,9 +100,17 @@ exports.onNuevaVenta = onValueCreated({ ref: `/${ROOT}/ventas/{eventoId}/{ventaI
 });
 
 // Cierre de evento.
-exports.onCierreEvento = onValueUpdated({ ref: `/${ROOT}/eventos/{eventoId}`, region: REGION }, async (event) => {
+exports.avisoCierreEvento = onValueUpdated({ ref: `/${ROOT}/eventos/{eventoId}`, region: REGION }, async (event) => {
   const antes = event.data.before.val();
   const despues = event.data.after.val();
   if (!despues || antes?.estado === despues.estado || despues.estado !== "cerrado") return;
   await sendPush("🔒 Evento cerrado", despues.nombre || "Evento", null);
+});
+
+// Prueba de avisos: el celular escribe /push_test/{id} con su deviceId y recibe un push solo él.
+exports.avisoPrueba = onValueCreated({ ref: `/${BASE}/push_test/{id}`, region: REGION }, async (event) => {
+  const v = event.data.val();
+  await event.data.ref.remove().catch(() => {});
+  if (!v?.device) return;
+  await sendPush("✅ Prueba de avisos", "Si ves esto, los avisos remotos funcionan en este dispositivo", null, v.device);
 });

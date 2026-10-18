@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// EVENTOS — firebase-messaging-sw.js v6
+// EVENTOS — firebase-messaging-sw.js v7
 // FCM (Android/Chrome) + Web Push nativo (iOS PWA)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -19,7 +19,7 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // ── CACHE offline básico ───────────────────────────────────────────────────────
-const CACHE_NAME = "eventos-v2";
+const CACHE_NAME = "eventos-v3";
 const PRECACHE   = ["/", "/index.html"];
 
 self.addEventListener("install", event => {
@@ -65,6 +65,10 @@ self.addEventListener("push", event => {
   if (!event.data) return;
   let data = {};
   try { data = event.data.json(); } catch { data = { title: event.data.text() }; }
+
+  // Los mensajes de FCM (Android/Chrome) los muestra onBackgroundMessage (más abajo).
+  // Si este handler también los mostrara saldría un aviso duplicado y en blanco.
+  if (data.fcmMessageId || data.from || data.data || data.notification) return;
 
   const title = data.title || "Eventos 🎟️";
   const body  = data.body  || "";

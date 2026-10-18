@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'functions/**'
+      - '.github/workflows/deploy-functions.yml'
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -32,7 +34,7 @@ jobs:
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
 
       - name: Deploy to Firebase
-        run: firebase deploy --only functions --project barretwater
+        run: firebase deploy --only functions --project barretwater --force --non-interactive
         env:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
 
