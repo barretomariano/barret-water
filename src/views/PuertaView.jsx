@@ -1,12 +1,24 @@
-import { useEffect, useMemo, useRef } from "react";
-import { api } from "../data";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { api, useOnline, usePuertaPendientes } from "../data";
 import { feedback } from "../feedback";
-import { fmtNum, hourOf, timeLabel } from "../utils";
-import { Progress, useApp } from "../ui";
+import { deviceId, fmtNum, hourOf, timeLabel } from "../utils";
+import { Progress } from "../ui";
 
 export default function PuertaView({ evento, r, log, locked }) {
-  const { toast } = useApp();
   const n = r.ingresos;
+  const online = useOnline();
+  const pend = usePuertaPendientes();
+
+  // Estado de sincronización: solo avisa si algo tarda más de un instante (no parpadea en cada toque).
+  const [lento, setLento] = useState(false);
+  useEffect(() => {
+    if (!pend) { setLento(false); return undefined; }
+    const t = setTimeout(() => setLento(true), 1500);
+    return () => clearTimeout(t);
+  }, [pend]);
+  const sync = !online ? { cls: "off", txt: pend ? `Sin señal · ${pend} por enviar` : "Sin señal · se guarda en el celular" }
+    : lento ? { cls: "wait", txt: `Enviando ${pend}…` }
+    : { cls: "ok", txt: "Sincronizado en vivo" };
 
   // Mantiene la pantalla encendida mientras se cuenta en la puerta (si el navegador lo permite).
   useEffect(() => {
@@ -24,7 +36,7 @@ export default function PuertaView({ evento, r, log, locked }) {
   const tocar = (delta) => {
     if (locked) return;
     if (delta < 0 && n + delta < 0) return feedback.error();
-    api.puerta(evento.id, delta).then((ok) => { if (!ok) toast("No se puede bajar de 0", "warn"); }).catch(() => toast("No se pudo registrar", "bad"));
+    api.puerta(evento.id, delta);
     if (delta > 0) { if (r.aforo > 0 && n + delta === r.aforo) feedback.full(); else feedback.door(); } else feedback.doorUndo();
   };
 
@@ -61,14 +73,23 @@ export default function PuertaView({ evento, r, log, locked }) {
 
       <div className="cols">
       <div className="col">
-      <div className="card" style={{ paddingTop: 20, paddingBottom: 20 }}>
-        <div className={`door-count${lleno ? " full" : ""}`} aria-live="polite">{fmtNum(n)}</div>
+      <div className="card door-card">
+        <span className={`door-sync ${sync.cls}`}><i />{sync.txt}</span>
+        <div key={n} className={`door-count${lleno ? " full" : ""}`} aria-live="polite">{fmtNum(n)}</div>
         <div className="door-cap">Personas adentro</div>
+        {r.aforo > 0 && (
+          <div className="door-aforo">
+            <Progress pct={(n / r.aforo) * 100} tone={lleno ? "bad" : n / r.aforo >= 0.9 ? "warn" : ""} />
+            <div className="tiny muted">{lleno ? "Aforo completo" : `Quedan ${fmtNum(r.aforo - n)} lugares`} · aforo {fmtNum(r.aforo)}</div>
+          </div>
+        )}
       </div>
 
-      <button className="door-plus" disabled={locked} onClick={() => tocar(1)} aria-label="Sumar una persona">+1</button>
+      <div className="door-pad">
+        <button className="door-minus" disabled={locked || n < 1} onClick={() => tocar(-1)} aria-label="Restar una persona">−1</button>
+        <button className="door-plus" disabled={locked} onClick={() => tocar(1)} aria-label="Sumar una persona">+1</button>
+      </div>
       <div className="door-quick">
-        <button disabled={locked || n < 1} onClick={() => tocar(-1)} aria-label="Restar una persona">−1</button>
         <button disabled={locked} onClick={() => tocar(2)}>+2</button>
         <button disabled={locked} onClick={() => tocar(5)}>+5</button>
       </div>
@@ -83,12 +104,6 @@ export default function PuertaView({ evento, r, log, locked }) {
           <div className="h"><span>Ingresaron / vendidas</span><b>{fmtNum(n)} / {fmtNum(r.entradas)}</b></div>
           <Progress pct={r.entradas ? (n / r.entradas) * 100 : 0} tone={n > r.entradas ? "warn" : ""} />
         </div>
-        {r.aforo > 0 && (
-          <div className="bar-row" style={{ marginBottom: 0 }}>
-            <div className="h"><span>Ocupación del aforo</span><b>{fmtNum(n)} / {fmtNum(r.aforo)}</b></div>
-            <Progress pct={(n / r.aforo) * 100} tone={lleno ? "bad" : n / r.aforo >= 0.9 ? "warn" : ""} />
-          </div>
-        )}
         {n > r.entradas && <div className="tiny muted" style={{ marginTop: 10 }}>Ingresaron {n - r.entradas} más que las entradas registradas (staff, invitados o ventas sin cargar).</div>}
         {r.faltanIngresar > 0 && <div className="tiny muted" style={{ marginTop: 10 }}>Faltan ingresar {r.faltanIngresar} entradas vendidas.</div>}
       </div>
@@ -110,7 +125,7 @@ export default function PuertaView({ evento, r, log, locked }) {
           <div className="card">
             {recientes.map((e) => (
               <div className="row" key={`${e.ts}${e.dev}${e.d}`}>
-                <span className="l">{timeLabel(e.ts)}</span>
+                <span className="l">{timeLabel(e.ts)} · <span className="muted">{e.dev === deviceId() ? "este dispositivo" : "otro dispositivo"}</span></span>
                 <span className={`r ${e.d > 0 ? "ok" : "warn"}`}>{e.d > 0 ? `+${e.d}` : e.d}</span>
               </div>
             ))}

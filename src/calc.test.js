@@ -1,4 +1,4 @@
-import { estadoPago, pagadoDe, saldoDe, resumenEvento, textoResumen } from "./calc";
+import { estadoPago, pagadoDe, saldoDe, resumenEvento, textoResumen, contarIngresos } from "./calc";
 import { parseMonto, toList, clean, fmt, whatsappUrl } from "./utils";
 
 const venta = (o = {}) => ({ id: "v", cantidad: 1, total: 10000, tierId: "t1", tierNombre: "Anticipada", pagos: {}, ...o });
@@ -142,4 +142,13 @@ describe("resumen único para WhatsApp", () => {
     expect(vacio).toContain("Sin ventas cargadas");
     expect(vacio).toContain("Sin gastos cargados");
   });
+});
+
+describe("personas adentro (puerta)", () => {
+  test("suma el contador heredado más los toques nuevos de todos los dispositivos", () => {
+    const log = [{ d: 1, v: 2, dev: "a" }, { d: 1, v: 2, dev: "b" }, { d: -1, v: 2, dev: "a" }, { d: 5 /* viejo: ya está en el contador */ }];
+    expect(contarIngresos(10, log)).toBe(11);
+    expect(contarIngresos(undefined, log)).toBe(1);
+  });
+  test("nunca baja de 0", () => expect(contarIngresos(0, [{ d: -3, v: 2 }])).toBe(0));
 });

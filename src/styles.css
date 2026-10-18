@@ -137,14 +137,24 @@ button { cursor: pointer; border: 0; background: none; }
 .bar-row { margin: 10px 0; } .bar-row .h { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
 
 /* ── Puerta ── */
-.door-count { font-family: var(--display); font-size: 150px; line-height: .9; text-align: center; text-shadow: 0 0 44px var(--glow); letter-spacing: .01em; }
+.door-card { position: relative; padding-top: 34px; padding-bottom: 16px; }
+.door-count { font-family: var(--display); font-size: 92px; line-height: .95; text-align: center; text-shadow: 0 0 36px var(--glow); letter-spacing: .01em; animation: bump .16s ease-out; }
 .door-count.full { color: var(--bad); text-shadow: 0 0 44px rgba(251,113,133,.6); animation: pulse 1s infinite; }
-.door-plus { width: 100%; height: 150px; border-radius: 30px; font-family: var(--display); font-size: 70px; letter-spacing: .04em; color: #fff; background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, var(--accent2))); box-shadow: 0 14px 40px var(--glow), inset 0 2px 0 rgba(255,255,255,.3); transition: transform .08s; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
-.door-plus:active { transform: scale(.96); }
-.door-plus:disabled { opacity: .35; }
-.door-quick { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; }
-.door-quick button { height: 64px; border-radius: 20px; background: var(--card2); border: 1px solid var(--line); font-weight: 800; font-size: 20px; touch-action: manipulation; }
-.door-quick button:active { transform: scale(.94); }
+.door-aforo { margin-top: 12px; display: grid; gap: 6px; text-align: center; }
+.door-sync { position: absolute; top: 10px; right: 12px; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--muted); }
+.door-sync i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+.door-sync.wait i { background: var(--warn); animation: pulse 1s infinite; }
+.door-sync.off { color: var(--warn); } .door-sync.off i { background: var(--warn); }
+.door-pad { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+.door-plus, .door-minus { height: 84px; border-radius: 22px; font-family: var(--display); font-size: 40px; letter-spacing: .04em; color: #fff; user-select: none; -webkit-user-select: none; touch-action: manipulation; transition: transform .08s; }
+.door-plus { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, var(--accent2))); box-shadow: 0 10px 28px var(--glow), inset 0 2px 0 rgba(255,255,255,.3); }
+.door-minus { background: var(--card2); border: 1px solid var(--line); color: var(--text); font-size: 32px; }
+.door-plus:active, .door-minus:active { transform: scale(.95); }
+.door-plus:disabled, .door-minus:disabled { opacity: .35; }
+.door-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.door-quick button { height: 46px; border-radius: 16px; background: var(--card2); border: 1px solid var(--line); font-weight: 800; font-size: 17px; touch-action: manipulation; }
+.door-quick button:active { transform: scale(.95); }
+@keyframes bump { from { transform: scale(1.07); } to { transform: none; } }
 .flow { display: flex; align-items: flex-end; gap: 5px; height: 84px; }
 .flow > div { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; font-size: 10px; color: var(--muted); gap: 3px; }
 .flow i { display: block; width: 100%; border-radius: 6px 6px 2px 2px; background: linear-gradient(180deg, var(--accent2), var(--accent)); min-height: 3px; }
@@ -250,9 +260,9 @@ kbd { font-family: inherit; font-weight: 800; font-size: 11px; padding: 2px 7px;
   .venta .a { font-size: 24px; }
 
   /* Puerta: el contador sí es grande (se lee desde lejos) pero sin desperdiciar la pantalla */
-  .door-count { font-size: 190px; }
-  .door-plus { height: 150px; font-size: 76px; }
-  .door-quick button { height: 64px; font-size: 22px; }
+  .door-count { font-size: 120px; }
+  .door-plus, .door-minus { height: 96px; }
+  .door-quick button { height: 50px; font-size: 18px; }
   .kbd-hint { display: block; }
 
   .fab { right: 32px; bottom: 28px; width: 60px; height: 60px; }
@@ -271,8 +281,9 @@ kbd { font-family: inherit; font-weight: 800; font-size: 11px; padding: 2px 7px;
 /* Pantallas bajas (celular de costado): la navegación no tapa el contenido */
 @media (max-height: 460px) and (orientation: landscape) and (max-width: 999px) {
   .shell { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
-  .door-count { font-size: 96px; }
-  .door-plus { height: 84px; font-size: 44px; }
+  .door-count { font-size: 64px; }
+  .door-plus, .door-minus { height: 60px; font-size: 30px; }
+  .door-quick button { height: 40px; }
 }
 
 /* ── Pulido general ── */

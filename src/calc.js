@@ -166,3 +166,10 @@ export function textoResumen(evento, r, fmt, fechaLabel) {
   }
   return L.join("\n");
 }
+
+// Personas adentro = contador heredado (eventos viejos) + suma de los toques nuevos (v:2) del registro.
+// Cada toque es un registro propio: varios celulares pueden contar a la vez y todo se fusiona sin pisarse.
+export function contarIngresos(base, log = []) {
+  const suma = log.reduce((t, e) => (e && e.v === 2 ? t + (Number(e.d) || 0) : t), 0);
+  return Math.max(0, (Number(base) || 0) + suma);
+}
